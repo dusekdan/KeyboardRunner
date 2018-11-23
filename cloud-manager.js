@@ -1,9 +1,12 @@
 class CloudManager {
-    constructor() {
+    constructor(app, container) {
+        this.app = app;
+        this.renderer = app.renderer;
+        this.container = container;
+        this.parentContainer = this.container.parent;
         this.cloudsList = [];
 
         setInterval(function() {
-            console.log("Cloud manager call. ");
             const sprite = (Math.random() > 0.5 ? "cloud_1" : "cloud_2");
             var cloud = new PIXI.Sprite(
                 PIXI.loader.resources["assets/images/" + sprite + ".png"].texture
@@ -12,31 +15,39 @@ class CloudManager {
             cloud.anchor.set(0.5, 0.5);
 
             cloud.position.set(
-                app.renderer.width + 300,
-                app.renderer.height * Math.random()
+                this.renderer.width + 300,
+                Utils.randomNumberFromRange(20, 135)
             );
 
-            console.log("Spawned cloud at "  + cloud.x + " : "+  cloud.y)
-
-            let minScale = 0.2;
-            let maxScale = 1.2;
+            let minScale = 0.1;
+            let maxScale = 0.4;
             let scale = Math.random() * (maxScale - minScale) + minScale;
+
             cloud.scale.set(scale, scale);
             
             this.cloudsList.push(cloud);
-            app.stage.addChild(cloud);
-        }.bind(this), Utils.randomNumberFromRange(250, 1200));
+            this.container.addChild(cloud);
+        }.bind(this), 600);
     }
 
     update() {
+        
+        console.log("Number of clouds: " + this.cloudsList.length);
+        
         this.cloudsList.forEach(function (element, index, array) {
-            element.position.x -= 4;
+            
+            // Map scale to speed (bigger scale number, higher speed)
+            let currentScale = 1;
+            if (element.localTransform !== null) {
+                currentScale = element.localTransform.a;    // 'a' == element x scale
+            }
 
-            console.log("Existing cloud objects: " + array.length)
+            element.position.x -= 5 * currentScale;
 
-            if (element.position.x < -app.renderer.width * 0.3) {
+            if (element.position.x < -this.renderer.width * 0.3) {
+                console.log("Out of image condition satisfied.");
                 element.destroy();
-                array.splice(0,1);
+                array.splice(index,1);
             }
 
         }.bind(this));

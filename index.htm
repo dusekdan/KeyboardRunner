@@ -6,9 +6,16 @@
     </head>
     <script src="node_modules/pixi.js/dist/pixi.min.js"></script>
     <body>
+        <!-- 
+            TODO: Refactor project structure.
+            - Once there is too many game managers and 'util-like' includes,
+            split managers into separate folder (proposed 'managers' or 
+            'game-managers') and put all the utils classes into utils.js file.
+        -->
         <script type="text/javascript" src="utils.js"></script>
         <script type="text/javascript" src="resource-loader.js"></script>
         <script type="text/javascript" src="cloud-manager.js"></script>
+        <script type="text/javascript" src="wall-manager.js"></script>
         <script type="text/javascript" src="index.js"></script>
 
 

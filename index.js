@@ -1,8 +1,18 @@
 const app = new PIXI.Application(1200, 600);
 const log = console.log;
 
+// Layers of the (play) screen
+const farBackground = new PIXI.Container();
+const closeBackground = new PIXI.Container();
+farBackground.zIndex = 1;
+closeBackground.zIndex = 2;
+
+app.stage.addChild(farBackground);
+app.stage.addChild(closeBackground);
+
 // Managers interacting with the game.
 var cloudManager;
+var wallManager;
 
 const init = () => {
     
@@ -16,8 +26,11 @@ const init = () => {
     }
     
     // Instantiate necessary managers.
-    cloudManager = new CloudManager(app);
-    
+    cloudManager = new CloudManager(app, farBackground);
+    wallManager = new WallManager(app, closeBackground);
+
+ 
+
     // Set up the basics for rendered canvas.
     app.renderer.backgroundColor = 0x22a7f0;
     app.renderer.render(app.stage);
@@ -26,8 +39,8 @@ const init = () => {
 
 const gameLoop = () => {
     requestAnimationFrame(gameLoop);
-    log ("Game loop called.");
     cloudManager.update();
+    wallManager.runTick();
 };
 
 
