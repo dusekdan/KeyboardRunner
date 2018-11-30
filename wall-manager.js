@@ -1,47 +1,47 @@
 class WallManager {
     constructor (app, container) {
-        this.app = app;
         this.renderer = app.renderer;
         this.container = container;
-        this.parentContainer = this.container.parent;
-
         this.wallList = [];
 
-        setInterval(function () {
+        // First wall will be spawned after 240 frames (roughly 4 seconds)
+        this.ticks = 240;
+    }
 
-            // Spawn rectangle that will move to the left and then disappear
+    spawnWall() {
+        let wallGraphics = new PIXI.Graphics();
+        wallGraphics.beginFill(Utils.randomIntColor());
+        wallGraphics.lineStyle(0);
+        wallGraphics.drawRect(0, 135, this.renderer.width, this.renderer.height);
+        wallGraphics.endFill();
 
-            let wallGraphics = new PIXI.Graphics();
-            wallGraphics.beginFill(Utils.randomIntColor());
-            wallGraphics.lineStyle(0);
-            wallGraphics.drawRect(0, 135, this.renderer.width, this.renderer.height);
-            wallGraphics.endFill();
+        let wall = Utils.createSpriteFromGraphics(this.renderer, wallGraphics);
+        wall.position.set(
+            this.renderer.width + 100,
+            15
+        );
+        wall.scale.set(2.5, 1.0);
 
-            let wallTexture = PIXI.RenderTexture.create(wallGraphics.width, wallGraphics.height);
-            this.renderer.render(wallGraphics, wallTexture);
-
-            let wallSprite = new PIXI.Sprite(wallTexture);
-            wallSprite.position.set(
-                this.renderer.width + 100,
-                15
-            );
-            wallSprite.scale.set(2.5, 1.0);
-
-            
-
-            this.wallList.push(wallSprite);
-            this.container.addChild(wallSprite);
-        }.bind(this), 8400);
+        this.wallList.push(wall);
+        this.container.addChild(wall);
     }
 
     runTick() {
-        console.log("Running Wall-Manager tick... Walls in total: " + this.wallList.length);
+
+        this.ticks -= 1;
+
+        if (this.ticks == 0) {
+            // Do some ticking operations
+            this.spawnWall();
+            this.ticks = 510; // roughly 8.5s (60*8.5)
+            log("WallManager, walls: " + this.wallList.length);
+        }
         
         this.wallList.forEach(function(element, index, array) {
             element.position.x -= 4;
 
             if (element.position.x < -this.renderer.width * 2.5) {
-                console.log("Time to remove the current wall (its out of the picture)");
+                console.log("Wall reached its usefulness. Time to remove it.");
                 element.destroy();
                 array.splice(0,1); // Start at index 0 (the first wall) and remove one element (itself)
             }
