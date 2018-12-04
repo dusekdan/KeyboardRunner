@@ -1,12 +1,10 @@
-const CLOUD_LIMIT = 32;
+const CLOUD_LIMIT = 12;
 const CLOUD_MOVEMENT_SPEED_BASE = 5;
 
 class CloudManager {
     constructor(app, container) {
-        this.app = app; // TODO: Refactor what is assignments and initializations are actually desirable here.
         this.renderer = app.renderer;
         this.container = container;
-        this.parentContainer = this.container.parent;
         this.cloudsList = [];
 
         // First cloud will be spawned after 240 frames (roughly 4 seconds)
