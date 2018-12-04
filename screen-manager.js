@@ -216,7 +216,6 @@ class LevelSelectScreen {
         // Add the remaining buttons
         let levels = this.createLevelSelectGrid();
         for (let i = 0; i < levels.length; i++) {
-            log("adding children levels");
             this.container.addChild(levels[i]);
         }
     }
@@ -244,8 +243,6 @@ class LevelSelectScreen {
             let yOffset = levelIconMargin + yCorrection * (this.iconLenght + levelIconMargin);
 
             let xHorizontalCorrection = (app.renderer.width / 2) - (2 * (this.iconLenght + levelIconMargin) )
-
-            console.log("Level " + (i+1) + " has x:y (" + xOffset + "," + yOffset + ")");
 
             levelGraphics.drawRect(
                 0, 0,
