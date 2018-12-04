@@ -13,9 +13,6 @@ class ScreenManager {
         this.levelSelectScreen.createScreen();
         this.levelSelectScreen.hideScreen();
 
-        // Hide screens that should not be visible.
-        //this.levelSelectScreen.hideScreen();
-
         // Set reference for currently active screen
         this.activeScreen = this.mainMenuScreen;
 
@@ -49,6 +46,34 @@ class ScreenManager {
         // introduce z-index changes. There should be no need for function
         // showActiveScreen, the switchToScreen() function should be used
         // instead.
+    }
+}
+
+class ScoreBoardScreen {
+    constructor() {
+        log("ScoreBoardScreen constructor called.");
+        this.container = new PIXI.Container();
+        app.stage.addChild(this.container);
+    }
+
+    createScreen() {
+        log("ScoreBoardScreen created."); 
+    }
+
+    // TODO: Introduced scoreboard table creation and retrieval.
+    createScoreBoardTable() {
+
+    }
+
+    // Standardized methods for any screen
+    showScreen() {
+        log("ScoreBoardScreen: show");
+        this.container.visible = true;
+    }
+
+    hideScreen() {
+        log("ScoreBoardScreen: hide");
+        this.container.visible = false;
     }
 }
 
@@ -140,22 +165,6 @@ class MainMenuScreen {
         return text;
     }
 
-    createPlayButton() {
-        
-    }
-
-    createLevelSelectButton() {
-
-    }
-
-    createScoreBoardButton() {
-
-    }
-
-    createExitButton() {
-
-    }
-
     // Standardized methods for any screen
     // TODO: Consider creating parent class implementing these functions
     // so screens will inherit these methods.
@@ -170,11 +179,15 @@ class MainMenuScreen {
     }
 }
 
+const MAX_LEVELS_CAP = 16;
+const LEVELS_PER_LINE = 4;
 class LevelSelectScreen {
     constructor() {
         log("LevelSelectScreen: constructor called");
         this.container = new PIXI.Container();
         app.stage.addChild(this.container);
+
+        this.iconLenght = 80;
     }
 
     createScreen() {
@@ -199,6 +212,80 @@ class LevelSelectScreen {
         });
 
         this.container.addChild(LSButton);
+
+        // Add the remaining buttons
+        let levels = this.createLevelSelectGrid();
+        for (let i = 0; i < levels.length; i++) {
+            log("adding children levels");
+            this.container.addChild(levels[i]);
+        }
+    }
+
+    // TODO: Introduce loading of the game state to display locked and unlocked 
+    // levels.
+    createLevelSelectGrid() {
+        const levelIconMargin = 25;
+        var yCorrection = 1;
+        var xCorrection = 0;
+
+        var levels = [];
+
+        for (let i = 0; i < MAX_LEVELS_CAP; i++) {
+            let levelGraphics = new PIXI.Graphics();
+            levelGraphics.beginFill(Utils.randomIntColor());
+            levelGraphics.lineStyle(0);
+
+            if (i % 4 == 0 && i != 0) {
+                yCorrection += 1;
+            } 
+            xCorrection = i % 4;
+
+            let xOffset = levelIconMargin + xCorrection * (this.iconLenght + levelIconMargin);
+            let yOffset = levelIconMargin + yCorrection * (this.iconLenght + levelIconMargin);
+
+            let xHorizontalCorrection = (app.renderer.width / 2) - (2 * (this.iconLenght + levelIconMargin) )
+
+            console.log("Level " + (i+1) + " has x:y (" + xOffset + "," + yOffset + ")");
+
+            levelGraphics.drawRect(
+                0, 0,
+                this.iconLenght, this.iconLenght);
+            levelGraphics.endFill();
+
+            levelGraphics.addChild(
+                this.prepareLevelButtonText((i+1), "black")
+            );
+
+            var level = Utils.createSpriteFromGraphics(app.renderer, levelGraphics);
+            level.interactive = true;
+            level.buttonMode = true;
+            level.position.set(xOffset + xHorizontalCorrection, yOffset);
+
+            level.on('pointerdown', () => {
+                screenManager.hideActiveScreen();
+                startGame((i+1));
+                log("Should start level " + (i+1));
+            });
+
+            levels.push(level);
+            
+        }
+        return levels;
+    }
+
+    prepareLevelButtonText(text, color) {
+        var text = new PIXI.Text(text, {
+            fontFamily: "arial",
+            fontSize: 24,
+            fill: color
+        });
+
+        let centerPoint = this.iconLenght / 2;
+
+        text.anchor.set(0.5, 0.5);
+        text.position.set(centerPoint, centerPoint);   // Center point of the button
+
+        return text;
     }
 
     showScreen() {
@@ -209,7 +296,5 @@ class LevelSelectScreen {
     hideScreen() {
         log("LevelSelectScreen: hide");
         this.container.visible = false;
-
     }
-
 }
