@@ -16,4 +16,15 @@ class Utils {
         renderer.render(graphics, texture);
         return new PIXI.Sprite(texture);
     }
+
+    // Warning: O(n^2) complexity, use only for debug purposes.
+    static makeId() {
+        var text = "";
+        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        for (var i = 0; i < Math.floor(Utils.randomNumberFromRange(5, 15)); i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return text;
+    }
 }

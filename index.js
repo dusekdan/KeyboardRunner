@@ -4,12 +4,14 @@ const log = console.log;
 // Layers of the (play) screen
 const farBackground = new PIXI.Container();
 const closeBackground = new PIXI.Container();
+const foreground = new PIXI.Container();
 
 
 // Managers interacting with the game.
 var cloudManager;
 var wallManager;
 var screenManager;
+var FGManager;
 
 const init = () => {
     log ("Game loaded.");
@@ -28,17 +30,41 @@ const init = () => {
     screenManager = new ScreenManager();
 }
 
-const startGame = () => {
+const startGame = (level) => {
     
+    // TODO: Determine what should happen depending on the level
+    if (level === undefined) {
+        log("Should obtain level to start from storage.");
+    }
+    log("Level " + level + " is starting.");
+
     // Instantiate necessary managers.
     cloudManager = new CloudManager(app, farBackground);
     wallManager = new WallManager(app, closeBackground);
 
+    FGManager = new ForegroundManager(app, foreground);
+
     // Configure background layers and add them to the stage.
     farBackground.zIndex = 1;
     closeBackground.zIndex = 2;
+    foreground.zIndex = 3;
     app.stage.addChild(farBackground);
     app.stage.addChild(closeBackground);
+    app.stage.addChild(foreground);
+
+    // Create player entity and put it into the game
+    var playerG = new PIXI.Graphics();
+    playerG.beginFill(0x000000);
+    playerG.lineStyle(0);
+    playerG.drawRect(0, 0, 125, 175);
+    playerG.endFill();
+
+    var player = Utils.createSpriteFromGraphics(app.renderer, playerG);
+    player.position.set(35,  400);
+    foreground.addChild(player);
+    FGManager.addPlayerEntity(player);
+    
+
 
     // Set up the basics for rendered canvas.
     app.renderer.backgroundColor = 0x22a7f0;
@@ -53,6 +79,7 @@ const gameLoop = () => {
     requestAnimationFrame(gameLoop);
     cloudManager.runTick();
     wallManager.runTick();
+    FGManager.runTick();
 };
 
 const tickerCallback = deltaTime => {
