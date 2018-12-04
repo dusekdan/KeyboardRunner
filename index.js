@@ -31,6 +31,9 @@ const init = () => {
 }
 
 const startGame = (level) => {
+
+    // Attach keyboard reader
+    KeyboardReader.attachKeyboardReader();
     
     // TODO: Determine what should happen depending on the level
     if (level === undefined) {
