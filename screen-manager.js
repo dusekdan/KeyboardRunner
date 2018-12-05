@@ -98,7 +98,7 @@ class MainMenuScreen {
             buttons[0].on('pointerdown', () => {
                 log("Play clicked...");
                 screenManager.hideActiveScreen();
-                startGame();
+                startGame(1); // TODO: Load this from local storage.
             });
 
             // LEVEL SELECT button
