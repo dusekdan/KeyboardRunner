@@ -1,23 +1,23 @@
 const app = new PIXI.Application(1200, 600);
 const log = console.log;
 
-// Layers of the (play) screen
-const farBackground = new PIXI.Container();
-const closeBackground = new PIXI.Container();
-const foreground = new PIXI.Container();
-
-
 // Managers interacting with the game.
 var cloudManager;
 var wallManager;
 var screenManager;
 var FGManager;
 
+// Layers of the (play) screen
+var farBackground = new PIXI.Container();
+var closeBackground = new PIXI.Container();
+var foreground = new PIXI.Container();
+
 const init = () => {
     log ("Game loaded.");
     
     if (document) {
         document.getElementById('the-play-screen').appendChild(app.view);
+        app.renderer.backgroundColor = 0x22a7f0;
     } else {
         log ("Error: DOM does not exist, unable to load the game.");
         alert("It was not possible to load the game.");
@@ -31,9 +31,22 @@ const init = () => {
 }
 
 const startGame = (level) => {
+    
+    // Put play-screen containers to the front. 
+    farBackground.zIndex = 1;
+    closeBackground.zIndex = 2;
+    foreground.zIndex = 3;
+    app.stage.addChild(farBackground);
+    app.stage.addChild(closeBackground);
+    app.stage.addChild(foreground);
+
+
 
     // Attach keyboard reader
     KeyboardReader.attachKeyboardReader();
+
+    // Acquire word-set for current level
+    var wordSet = WordSet.getWordSetForLevel(level);
     
     // TODO: Determine what should happen depending on the level
     if (level === undefined) {
@@ -44,30 +57,10 @@ const startGame = (level) => {
     // Instantiate necessary managers.
     cloudManager = new CloudManager(app, farBackground);
     wallManager = new WallManager(app, closeBackground);
-
-    FGManager = new ForegroundManager(app, foreground);
-
-    // Configure background layers and add them to the stage.
-    farBackground.zIndex = 1;
-    closeBackground.zIndex = 2;
-    foreground.zIndex = 3;
-    app.stage.addChild(farBackground);
-    app.stage.addChild(closeBackground);
-    app.stage.addChild(foreground);
+    FGManager = new ForegroundManager(app, foreground, wordSet);   
 
     // Create player entity and put it into the game
-    var playerG = new PIXI.Graphics();
-    playerG.beginFill(0x000000);
-    playerG.lineStyle(0);
-    playerG.drawRect(0, 0, 125, 175);
-    playerG.endFill();
-
-    var player = Utils.createSpriteFromGraphics(app.renderer, playerG);
-    player.position.set(35,  400);
-    foreground.addChild(player);
-    FGManager.addPlayerEntity(player);
-    
-
+    FGManager.addPlayerEntity();
 
     // Set up the basics for rendered canvas.
     app.renderer.backgroundColor = 0x22a7f0;
@@ -79,10 +72,19 @@ const startGame = (level) => {
 }
 
 const gameLoop = () => {
-    requestAnimationFrame(gameLoop);
-    cloudManager.runTick();
-    wallManager.runTick();
-    FGManager.runTick();
+    let gameTickResult = FGManager.runTick();
+    if (gameTickResult !== "LEVEL-FINISHED-FLAG-TERMINATED") {
+        wallManager.runTick();
+        cloudManager.runTick();
+        requestAnimationFrame(gameLoop);
+    } else {
+        // Destroy and reset objects created for the gameloop
+        KeyboardReader.dettachKeyboardReader();
+        cloudManager.destructor();
+        wallManager.destructor();
+        FGManager.destructor();
+        screenManager.switchToScreen("MainMenu");
+    }
 };
 
 const tickerCallback = deltaTime => {

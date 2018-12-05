@@ -1,5 +1,5 @@
 class ForegroundManager {
-    constructor(app, container) {
+    constructor(app, container, wordSet) {
         log("Foreground manager created");
         this.container = container;
 
@@ -10,6 +10,8 @@ class ForegroundManager {
         this.entityViews = [];
 
         this.ticks = 100;
+        
+        this.wordList = wordSet;
 
         // Class variables
         this.entityLimit = 10;
@@ -20,9 +22,25 @@ class ForegroundManager {
         //this.createEntity('testword', false);
     }
 
-    addPlayerEntity(player) {
-        this.player = player;
+    destructor() {
+        this.player.destroy();
+        this.entityViews.forEach((element, index, array) => {
+            this.destroyEntity(element);
+        });
+    }
 
+    addPlayerEntity() {
+        var playerG = new PIXI.Graphics();
+        playerG.beginFill(0x000000);
+        playerG.lineStyle(0);
+        playerG.drawRect(0, 0, 125, 175);
+        playerG.endFill();
+    
+        var player = Utils.createSpriteFromGraphics(app.renderer, playerG);
+        player.position.set(35,  400);
+        this.container.addChild(player);
+
+        this.player = player;
         this.shouldMoveForward = true;
     }
 
@@ -57,26 +75,10 @@ class ForegroundManager {
         }
         this.entityViews.splice(toDelete, 1);
         log(this.entityViews);
-        
-        this.entitiesL.filter(el => {
-            log(el.word + " vs " + entity.model.word)
-            log(el.word !== entity.model.word);
-            return el.word !== entity.model.word;
-        });
-
-        log("Destroyed objects from entitiesL and entityViews.");
-        log(this.entitiesL);
+        log("Destroyed objects from entityViews.");
 
         // Entity destroys itself and removes anything visual from the stage.
         entity.destroyEntity();
-
-        /*let child = this.entities[word];
-        this.container.removeChild(child);
-        delete this.entities[word];*/
-    }
-
-    updateEntity(word) {
-        // TODO: Should change HP of entity under given word
     }
 
     keypressNotify(keyCode) {
@@ -98,16 +100,6 @@ class ForegroundManager {
                 log("Candidate would be: " + candidates[0].model.word);
                 this.currentTarget = candidates[0];
                 this.currentTarget.updateEntityDestruction(letter);
-
-                // TEST: Destroying entity in runTick method, as keypressNotify is called asynchronously
-                // and therefore can result in destroying entity while it is still being processed.
-                
-                /*if (this.currentTarget.isEntityDestroyed()) {
-                    // Destroy entity visually
-                    this.destroyEntity(this.currentTarget);
-                    this.currentTarget = null;
-                }*/
-
             } else {
                 log("No suitable candidates found. This would be a miss");
             }
@@ -146,8 +138,16 @@ class ForegroundManager {
         if (this.ticks > 0)
             this.ticks -= 1;
         
-        if (this.ticks == 0 && this.entityViews.length < this.entityLimit) {
-            this.createEntity(Utils.makeId(), true);
+        if (
+            this.ticks == 0 && 
+            this.entityViews.length < this.entityLimit &&
+            this.wordList.length != 0   // No words available, game ending condition should trigger soon. FUTURE: Ensure game ending condition is triggered synchronously (maybe check in entity destruction; then this part of the condition will not be necessary)
+            ) {
+            
+            let wordToSpawn = this.wordList.pop();
+            
+            this.createEntity(wordToSpawn, true);
+            
             this.ticks = Math.floor(Utils.randomNumberFromRange(36, 360));
             log("Spawned entity. Scheduling next entity to: " + this.ticks + " ticks. Total: " + this.entityViews.length);
         }
@@ -162,6 +162,18 @@ class ForegroundManager {
             this.destroyEntity(this.currentTarget);
             this.currentTarget = null;
         }
+
+        // Check game ending condition
+        if (this.isLevelBeaten()) {
+            alert("Congratulations! You have beaten the level.");
+            return "LEVEL-FINISHED-FLAG-TERMINATED";
+        } else {
+            return "LEVEL-IN-PROGRESS";
+        }
+    }
+
+    isLevelBeaten() {
+        return this.wordList.length == 0 && this.entityViews.length == 0;
     }
 }
 
