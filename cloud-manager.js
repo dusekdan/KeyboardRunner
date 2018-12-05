@@ -11,6 +11,12 @@ class CloudManager {
         this.ticks = 240;
     }
 
+    destructor() {
+        this.cloudsList.forEach((element, index, array) => {
+            element.destroy();
+        });
+    }
+
     spawnCloud() {
         // Do not exceed the limit of CLOUD_LIMIT clouds.
         if (this.cloudsList.length < CLOUD_LIMIT) {

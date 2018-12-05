@@ -8,6 +8,12 @@ class WallManager {
         this.ticks = 240;
     }
 
+    destructor() {
+        this.wallList.forEach((element, index, array) => {
+            element.destroy();
+        })
+    }
+
     spawnWall() {
         let wallGraphics = new PIXI.Graphics();
         wallGraphics.beginFill(Utils.randomIntColor());
