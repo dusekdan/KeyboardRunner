@@ -267,7 +267,17 @@ class EntityView {
         "dropShadowColor": "#dde94b",
         "dropShadowDistance": 0, "letterSpacing": 2, "fontFamily" : "Arial Black", "fill": "#d654e0","fontSize": 20,"fontVariant": "small-caps", "strokeThickness":2} ;
         let newText = this.prepareEntityText(this.model.getRemaining(), textStyle);
+        
+        // Put entity contianer on top of the others (it is active now)
+        // Note that 'children.length' must be decreased as the index must exist. 
+        this.parent.setChildIndex(
+            this.container, 
+            this.parent.children.length - 1
+        );
+        
+        
         this.container.addChild(newText);
+
     }
 
     updateEntityDestruction(letter) {
