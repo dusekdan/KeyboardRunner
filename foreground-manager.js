@@ -1,3 +1,5 @@
+const ScoreTextStyle = { "letterSpacing": 2, "fontFamily" : "Arial Black", "fill": "#000","fontSize": 20,"fontVariant": "small-caps"};
+
 class ForegroundManager {
     constructor(app, container, wordSet) {
         log("Foreground manager created");
@@ -13,6 +15,8 @@ class ForegroundManager {
         
         this.wordList = wordSet;
 
+        this.score = 0;
+
         // Class variables
         this.entityLimit = 10;
         this.entitySize = 25;
@@ -24,9 +28,30 @@ class ForegroundManager {
 
     destructor() {
         this.player.destroy();
+        
         this.entityViews.forEach((element, index, array) => {
             this.destroyEntity(element);
         });
+
+        this.container.children.forEach((element, index, array) => {
+            element.destroy();
+        })
+    }
+
+    calculateScore(age, length) {
+        // FUTURE: Introduce game speed into equation
+        const pointsPerLetter = 10;
+        const ticksPerSecond = 60;
+        const penaltyPerSecond = 10;
+        let scoreBase = length * pointsPerLetter;
+        let ageInSeconds = age / ticksPerSecond;
+        let penalty = 0;
+        if (ageInSeconds > 3.5) {
+            penalty = ageInSeconds * penaltyPerSecond;
+        }
+
+        this.score += Math.floor(scoreBase - penalty);
+        return this.score;
     }
 
     addPlayerEntity() {
@@ -42,6 +67,25 @@ class ForegroundManager {
 
         this.player = player;
         this.shouldMoveForward = true;
+    }
+
+    addScoreIndicator() {
+        var scoreText = new PIXI.Text("Score: " + 0, ScoreTextStyle);
+        scoreText.name = "ScoreIndicator"; // TODO: Test what is in .name by default (inherited)
+        scoreText.position.set(
+            app.renderer.width - 300,
+            25
+        );
+        this.container.addChild(scoreText);
+    }
+
+    updateScoreIndicator(value) {
+        let scoreIndicator = this.container.getChildByName("ScoreIndicator");
+        log(scoreIndicator);
+        if (scoreIndicator !== undefined) {
+            scoreIndicator.text = "Score: " + value;
+            scoreIndicator.style = ScoreTextStyle;
+        }
     }
 
     // TODO: This class should probably contain the calls for wordlists
@@ -108,10 +152,6 @@ class ForegroundManager {
             // Check if the pressed key is the key expected in currentTarget
             if (this.currentTarget.model.getRemaining().startsWith(letter)) {
                 this.currentTarget.updateEntityDestruction(letter);
-                /*if (this.currentTarget.isEntityDestroyed()) {
-                    this.destroyEntity(this.currentTarget);
-                    this.currentTarget = null;
-                }*/
             } else {
                 log("Current target does not start with this letter. That would be miss.");
             }
@@ -157,15 +197,23 @@ class ForegroundManager {
             element.updateEntityMovement();
         });
 
-        // Check the target's current state
+        // Calculate score here & then destroy entity for good.
         if (this.currentTarget !== null && this.currentTarget.isEntityDestroyed()) {
+
+            let score = this.calculateScore(
+                this.currentTarget.model.age, 
+                this.currentTarget.model.word.length
+            );
+            log("Calculated score: " + score);
+            this.updateScoreIndicator(score);
+
             this.destroyEntity(this.currentTarget);
             this.currentTarget = null;
         }
 
         // Check game ending condition
         if (this.isLevelBeaten()) {
-            alert("Congratulations! You have beaten the level.");
+            alert("Congratulations! You have beaten the level.");   // TODO: Replace this with in-game rendered pop-up.
             return "LEVEL-FINISHED-FLAG-TERMINATED";
         } else {
             return "LEVEL-IN-PROGRESS";
@@ -183,6 +231,7 @@ class Entity {
         this.isEnemy = isEnemy
         this.wordProgress = "";     // No destruction at the beginning
         this.hits = 0;
+        this.age = 0;
     } 
 
     destruct(letter) {
@@ -260,21 +309,28 @@ class EntityView {
             this.container.removeChild(textChildren);
         } 
 
-        var textStyle = {"dropShadow": true,
-        "dropShadowAlpha": 0.6,
-        "dropShadowAngle": 0,
-        "dropShadowBlur": 37,
-        "dropShadowColor": "#dde94b",
-        "dropShadowDistance": 0, "letterSpacing": 2, "fontFamily" : "Arial Black", "fill": "#d654e0","fontSize": 20,"fontVariant": "small-caps", "strokeThickness":2} ;
+        var textStyle = {
+            "dropShadow": true,
+            "dropShadowAlpha": 0.6,
+            "dropShadowAngle": 0,
+            "dropShadowBlur": 37,
+            "dropShadowColor": "#dde94b",
+            "dropShadowDistance": 0, 
+            "letterSpacing": 2, 
+            "fontFamily" : "Arial Black",
+            "fill": "#d654e0",
+            "fontSize": 20,
+            "fontVariant": "small-caps", 
+            "strokeThickness":2
+        };
         let newText = this.prepareEntityText(this.model.getRemaining(), textStyle);
         
-        // Put entity contianer on top of the others (it is active now)
+        // Put entity container on top of the others (it is active now)
         // Note that 'children.length' must be decreased as the index must exist. 
         this.parent.setChildIndex(
             this.container, 
             this.parent.children.length - 1
         );
-        
         
         this.container.addChild(newText);
 
@@ -295,6 +351,9 @@ class EntityView {
     }
 
     updateEntityMovement() {
+        // Update entity age every tick by one
+        this.model.age += 1;
+
         if (this.container.position.x > -this.container.width) {
             // Movement towards the player
             this.container.position.x -= 0.5;
