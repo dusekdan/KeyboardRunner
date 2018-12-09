@@ -4,6 +4,7 @@ class ScreenManager {
 
         this.mainMenuScreen = new MainMenuScreen();
         this.levelSelectScreen = new LevelSelectScreen();
+        this.scoreBoardScreen = new ScoreBoardScreen();
 
         // TODO: Determine whether screen's should be manually created inside
         // ScreenManager constructor, or whether every screen should be created
@@ -12,6 +13,9 @@ class ScreenManager {
         
         this.levelSelectScreen.createScreen();
         this.levelSelectScreen.hideScreen();
+
+        //this.scoreBoardScreen.createScreen();
+        //this.scoreBoardScreen.hideScreen();
 
         // Set reference for currently active screen
         this.activeScreen = this.mainMenuScreen;
@@ -34,6 +38,10 @@ class ScreenManager {
                 this.levelSelectScreen.showScreen();
                 this.activeScreen = this.levelSelectScreen;
             break;
+            case "ScoreBoard":
+                this.scoreBoardScreen.showScreen();
+                this.activeScreen = this.scoreBoardScreen;
+            break;
             default:
                 alert("Requested screen is not available.");
             break;
@@ -46,34 +54,6 @@ class ScreenManager {
         // introduce z-index changes. There should be no need for function
         // showActiveScreen, the switchToScreen() function should be used
         // instead.
-    }
-}
-
-class ScoreBoardScreen {
-    constructor() {
-        log("ScoreBoardScreen constructor called.");
-        this.container = new PIXI.Container();
-        app.stage.addChild(this.container);
-    }
-
-    createScreen() {
-        log("ScoreBoardScreen created."); 
-    }
-
-    // TODO: Introduced scoreboard table creation and retrieval.
-    createScoreBoardTable() {
-
-    }
-
-    // Standardized methods for any screen
-    showScreen() {
-        log("ScoreBoardScreen: show");
-        this.container.visible = true;
-    }
-
-    hideScreen() {
-        log("ScoreBoardScreen: hide");
-        this.container.visible = false;
     }
 }
 
@@ -98,12 +78,19 @@ class MainMenuScreen {
             buttons[0].on('pointerdown', () => {
                 log("Play clicked...");
                 screenManager.hideActiveScreen();
-                startGame(1); // TODO: Load this from local storage.
+                startGame(
+                    GameStore.getLastUnlockedLevel()
+                ); // TODO: Load this from local storage.
             });
 
             // LEVEL SELECT button
             buttons[1].on('pointerdown', () => {
                 screenManager.switchToScreen("LevelSelect");
+            });
+
+            // SCORE BOARD button)
+            buttons[2].on('pointerdown', () => {
+                screenManager.switchToScreen("ScoreBoard");
             });
 
             // EXIT button redirects to danieldusek.com/projects
@@ -179,6 +166,125 @@ class MainMenuScreen {
     }
 }
 
+const SCORE_RECT_LENGTH = 800;
+const SCORE_RECT_HEIGHT = 35; 
+const SCORE_RECTS_TOP_OFFSET_BASE = 100;
+const SCORE_RECT_MARGIN = 15;
+class ScoreBoardScreen {
+    constructor() {
+        log("ScoreBoardScreen constructor called.");
+        this.container = new PIXI.Container();
+        app.stage.addChild(this.container);
+    }
+
+    destructor() {
+        while (this.container.children.length != 0) {
+            this.container.children[0].destroy();
+        }
+    }
+
+    createScreen() {
+        log("ScoreBoardScreen created."); 
+        
+        this.createBackButton();
+
+        this.createScoreBoardTable();
+    }
+
+    createBackButton() {
+        var G = new PIXI.Graphics();
+        G.beginFill(0xffddee);
+        G.lineStyle(2, 0xff00ee);
+        G.drawRect(0, 0, 200, 50);
+        G.endFill();
+
+        var T = new PIXI.Text("<< Back", { "fontFamily": "Arial Black", "fontSize": 18 });
+        T.anchor.set(0.5, 0.5);
+        T.position.set(200/2, 50/2);
+
+        G.addChild(T);
+
+        var S = Utils.createSpriteFromGraphics(app.renderer, G);
+        S.interactive = true;
+        S.buttonmode = true;
+
+        S.on('pointerdown', () => {
+            screenManager.switchToScreen("MainMenu");
+        })
+
+        S.position.set(25, 25);
+        this.container.addChild(S);
+
+    }
+
+    // TODO: Introduced scoreboard table creation and retrieval.
+    createScoreBoardTable() {
+
+        // Put High-Scores text above scoreboard table
+        const HighScoreTextStyle = {
+            "fill": [
+                "#d23cc4",
+                "#4b1c9b"
+            ],
+            "fontFamily": "Arial Black",
+            "fontSize": 41,
+            "letterSpacing": 3,
+            "lineJoin": "bevel",
+            "miterLimit": 0,
+            "strokeThickness": 1
+        }
+
+        var highScoreText = new PIXI.Text("High Scores", HighScoreTextStyle);
+        highScoreText.anchor.set(0.5, 0.5);
+        highScoreText.position.set(
+            (app.renderer.width / 2),
+            (SCORE_RECTS_TOP_OFFSET_BASE - 10)  / 2
+        );
+        this.container.addChild(highScoreText);
+
+        const ScoreRowTextStyle = { "fontFamily": "Arial Black", "fontSize": 18 };
+
+        // Obtain data for high score table rows
+        var highScoreRows = GameStore.getTopNScores(10);
+
+        for (let i = 0; i < highScoreRows.length; i++) {
+            var row = new PIXI.Graphics();
+            row.beginFill(0xdbb983, 0.5);
+            row.lineStyle(0);
+            row.drawRect(0,0, SCORE_RECT_LENGTH, SCORE_RECT_HEIGHT);
+            row.endFill();
+
+            var rowText = new PIXI.Text("#" + (i+1) + ": " + highScoreRows[i].score + " (" + highScoreRows[i].name + ")", ScoreRowTextStyle);
+            rowText.anchor.set(0, 0.5)
+            rowText.position.set(15, SCORE_RECT_HEIGHT/2);
+            row.addChild(rowText);
+
+            // Position row to the correct part of the screen
+            row.position.set(
+                (app.renderer.width/2) - (SCORE_RECT_LENGTH/2),
+                (SCORE_RECTS_TOP_OFFSET_BASE) + i * (SCORE_RECT_MARGIN + SCORE_RECT_HEIGHT)
+            );
+
+            this.container.addChild(row);
+        }
+
+
+    }
+
+    // Standardized methods for any screen
+    showScreen() {
+        log("ScoreBoardScreen: show");
+        this.createScreen();
+        this.container.visible = true;
+    }
+
+    hideScreen() {
+        log("ScoreBoardScreen: hide");
+        this.destructor();
+        this.container.visible = false;
+    }
+}
+
 const MAX_LEVELS_CAP = 16;
 const LEVELS_PER_LINE = 4;
 class LevelSelectScreen {
@@ -190,34 +296,48 @@ class LevelSelectScreen {
         this.iconLenght = 80;
     }
 
+    destructor() {
+        while (this.container.children.length != 0) {
+            this.container.children[0].destroy();
+        }
+    }
+
     createScreen() {
         log("LevelSelectScreen: created");
 
-        var LSG = new PIXI.Graphics();
-        LSG.beginFill(Utils.randomIntColor());
-        LSG.lineStyle(0);
-        LSG.drawCircle(40, 40, 40);
-        LSG.endFill();
-
-        var LSButton = Utils.createSpriteFromGraphics(app.renderer, LSG);
-        LSButton.buttonMode = true;
-        LSButton.interactive = true;
-        LSButton.position.set(
-            (app.renderer.width / 2)  - 250,
-            (app.renderer.height / 2) - 250 
-        );
-        LSButton.on('pointerdown', () => {
-            log("LevelSelect screen button interaction.");
-            screenManager.switchToScreen("MainMenu");
-        });
-
-        this.container.addChild(LSButton);
+        this.createBackButton();
 
         // Add the remaining buttons
         let levels = this.createLevelSelectGrid();
         for (let i = 0; i < levels.length; i++) {
             this.container.addChild(levels[i]);
         }
+    }
+
+    createBackButton() {
+        var G = new PIXI.Graphics();
+        G.beginFill(0xffddee);
+        G.lineStyle(2, 0xff00ee);
+        G.drawRect(0, 0, 200, 50);
+        G.endFill();
+
+        var T = new PIXI.Text("<< Back", { "fontFamily": "Arial Black", "fontSize": 18 });
+        T.anchor.set(0.5, 0.5);
+        T.position.set(200/2, 50/2);
+
+        G.addChild(T);
+
+        var S = Utils.createSpriteFromGraphics(app.renderer, G);
+        S.interactive = true;
+        S.buttonmode = true;
+
+        S.on('pointerdown', () => {
+            screenManager.switchToScreen("MainMenu");
+        })
+
+        S.position.set(25, 25);
+        this.container.addChild(S);
+
     }
 
     // TODO: Introduce loading of the game state to display locked and unlocked 
@@ -229,9 +349,11 @@ class LevelSelectScreen {
 
         var levels = [];
 
+        let levelBGC =  0x2174a8;
+
         for (let i = 0; i < MAX_LEVELS_CAP; i++) {
             let levelGraphics = new PIXI.Graphics();
-            levelGraphics.beginFill(Utils.randomIntColor());
+            levelGraphics.beginFill(levelBGC);
             levelGraphics.lineStyle(0);
 
             if (i % 4 == 0 && i != 0) {
@@ -254,21 +376,35 @@ class LevelSelectScreen {
             );
 
             var level = Utils.createSpriteFromGraphics(app.renderer, levelGraphics);
-            level.interactive = true;
-            level.buttonMode = true;
+            
             level.position.set(xOffset + xHorizontalCorrection, yOffset);
 
-            level.on('pointerdown', () => {
-                screenManager.hideActiveScreen();
-                startGame((i+1));
-                log("Should start level " + (i+1));
-            });
+            // Give a grey tint to locked levels
+            if ((i+1) > GameStore.getLastUnlockedLevel()) {
+                level.tint = 0x636568;
+            }
+
+            // Allow clicking only on the unlocked levels
+            log("If " + (i+1) + " <= " + GameStore.getLastUnlockedLevel())
+            if ((i+1) <= GameStore.getLastUnlockedLevel()) {
+                level.interactive = true;
+                level.buttonMode = true;
+
+                level.on('pointerdown', () => {
+                    screenManager.hideActiveScreen();
+                    startGame((i+1));
+                    log("Should start level " + (i+1));
+                });
+            }
+
 
             levels.push(level);
             
         }
         return levels;
     }
+
+
 
     prepareLevelButtonText(text, color) {
         var text = new PIXI.Text(text, {
@@ -287,11 +423,13 @@ class LevelSelectScreen {
 
     showScreen() {
         log("LevelSelectScreen: show");
+        this.createScreen();
         this.container.visible = true;
     }
 
     hideScreen() {
         log("LevelSelectScreen: hide");
+        this.destructor();
         this.container.visible = false;
     }
 }

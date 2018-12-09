@@ -31,6 +31,8 @@ class ForegroundManager {
     destructor() {
         this.player.destroy();
         
+        // TODO: Investigate if deleting by forEach works (it should not by observations from screenManager.)
+
         this.entityViews.forEach((element, index, array) => {
             this.destroyEntity(element);
         });
@@ -52,7 +54,14 @@ class ForegroundManager {
             penalty = ageInSeconds * penaltyPerSecond;
         }
 
-        this.score += Math.floor(scoreBase - penalty);
+        let finalScore = Math.floor(scoreBase - penalty);
+        
+        // Correction so it is not possible to obtain negative score
+        if (finalScore < 10 ) {
+            finalScore = 10;
+        }
+
+        this.score += finalScore;
         return this.score;
     }
 

@@ -45,6 +45,32 @@ class GameStore {
         storage.setItem('scoreboard', JSON.stringify(scores));
     }
 
+    static getTopNScores(n) {
+        let scores = JSON.parse(window.localStorage.getItem('scoreboard'));
+        let allScores = [];
+        for (let i = 1; i <= Object.keys(scores).length; i++) {
+            for (let j = 0; j < scores[i].length; j++) {
+                allScores.push(scores[i][j]);
+            }
+        }
+
+        // Order by the best performance.
+        allScores.sort((a, b) => {
+            if (a.score < b.score)
+                return 1;
+            if (a.score > b.score)
+                return -1;
+            
+            return 0;
+        });
+
+        if (allScores.length > n) {
+            allScores.splice(n - 1, allScores.length - 1);
+        }
+
+        return allScores;
+    }
+
     static setLevelCompleted(level) {
         var storage = window.localStorage;
 
@@ -63,7 +89,7 @@ class GameStore {
     }
 
     static getLastUnlockedLevel() {
-        return window.localStorage.getItem('lastUnlockedLevel');
+        return parseInt(window.localStorage.getItem('lastUnlockedLevel'));
     }
 
 
