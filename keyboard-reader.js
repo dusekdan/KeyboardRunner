@@ -12,7 +12,7 @@ class KeyboardReader {
     static readInput(event) {
         // Event has .keyCode (allways uppercase), .which (), .charCode (actual)
         
-        log("keyCode:" + event.keyCode + " which:" + event.which + " charCode:" + event.charCode);
+        // log("keyCode:" + event.keyCode + " which:" + event.which + " charCode:" + event.charCode);
         
         FGManager.keypressNotify(event.keyCode);
     }
