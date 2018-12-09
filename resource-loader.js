@@ -4,7 +4,8 @@ const imagesFolder = assetsFolder + "images/";
 const resources = [
     imagesFolder + "cloud_1.png",
     imagesFolder + "cloud_2.png",
-    imagesFolder + "entity_place_holder.png"
+    imagesFolder + "entity_place_holder.png",
+    imagesFolder + "lock-50.png"
 ]
 
 const loadPIXIResources = loadedCallback => {

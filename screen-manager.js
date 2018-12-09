@@ -371,18 +371,25 @@ class LevelSelectScreen {
                 this.iconLenght, this.iconLenght);
             levelGraphics.endFill();
 
-            levelGraphics.addChild(
-                this.prepareLevelButtonText((i+1), "black")
-            );
+            // Give a grey tint & padlock icon to the locked levels
+            if ((i+1) > GameStore.getLastUnlockedLevel()) {
+                levelGraphics.tint = 0x636568;
+
+                // Icon
+                var padlock = new PIXI.Sprite(
+                    PIXI.loader.resources["assets/images/lock-50.png"].texture
+                );
+                padlock.anchor.set(0.5, 0.5);
+                padlock.position.set(this.iconLenght/2, this.iconLenght/2);
+                levelGraphics.addChild(padlock);
+            } else { // Put level number for unlocked levels
+                levelGraphics.addChild(
+                    this.prepareLevelButtonText((i+1), "black")
+                );
+            }
 
             var level = Utils.createSpriteFromGraphics(app.renderer, levelGraphics);
-            
             level.position.set(xOffset + xHorizontalCorrection, yOffset);
-
-            // Give a grey tint to locked levels
-            if ((i+1) > GameStore.getLastUnlockedLevel()) {
-                level.tint = 0x636568;
-            }
 
             // Allow clicking only on the unlocked levels
             log("If " + (i+1) + " <= " + GameStore.getLastUnlockedLevel())
