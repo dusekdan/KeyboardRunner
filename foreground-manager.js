@@ -1,7 +1,7 @@
 const ScoreTextStyle = { "letterSpacing": 2, "fontFamily" : "Arial Black", "fill": "#000","fontSize": 20,"fontVariant": "small-caps"};
 
 class ForegroundManager {
-    constructor(app, container, wordSet) {
+    constructor(app, container, wordSet, level) {
         log("Foreground manager created");
         this.container = container;
 
@@ -16,6 +16,8 @@ class ForegroundManager {
         this.wordList = wordSet;
 
         this.score = 0;
+
+        this.level = level;
 
         // Class variables
         this.entityLimit = 10;
@@ -199,7 +201,7 @@ class ForegroundManager {
 
         // Calculate score here & then destroy entity for good.
         if (this.currentTarget !== null && this.currentTarget.isEntityDestroyed()) {
-
+            
             let score = this.calculateScore(
                 this.currentTarget.model.age, 
                 this.currentTarget.model.word.length
@@ -208,11 +210,25 @@ class ForegroundManager {
             this.updateScoreIndicator(score);
 
             this.destroyEntity(this.currentTarget);
+
             this.currentTarget = null;
+
         }
 
         // Check game ending condition
         if (this.isLevelBeaten()) {
+
+            // Try to get the player name for the scoreboard & save score.
+            let playerName = prompt("Enter your name:");
+            GameStore.saveScore(this.level, this.score, playerName);
+
+            // If the next level after this one was not beaten before, unlock it.
+            let lastUnlockedLevel = parseInt(GameStore.getLastUnlockedLevel());
+            if (lastUnlockedLevel == this.level) {
+                log("trying to unlock " + this.level);
+                GameStore.setLevelCompleted(this.level);
+            }
+
             alert("Congratulations! You have beaten the level.");   // TODO: Replace this with in-game rendered pop-up.
             return "LEVEL-FINISHED-FLAG-TERMINATED";
         } else {

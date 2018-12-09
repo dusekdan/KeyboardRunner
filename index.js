@@ -18,6 +18,12 @@ const init = () => {
     if (document) {
         document.getElementById('the-play-screen').appendChild(app.view);
         app.renderer.backgroundColor = 0x22a7f0;
+
+        // Check whether GameStore with previous state exists
+        if (!GameStore.checkStorageExist()) {
+            GameStore.createFreshStorage();
+        } else { log("GameStore from previous games exists."); }
+
     } else {
         log ("Error: DOM does not exist, unable to load the game.");
         alert("It was not possible to load the game.");
@@ -57,7 +63,7 @@ const startGame = (level) => {
     // Instantiate necessary managers.
     cloudManager = new CloudManager(app, farBackground);
     wallManager = new WallManager(app, closeBackground);
-    FGManager = new ForegroundManager(app, foreground, wordSet);   
+    FGManager = new ForegroundManager(app, foreground, wordSet, level);   
 
     // Create player entity and put it into the game
     FGManager.addPlayerEntity();
