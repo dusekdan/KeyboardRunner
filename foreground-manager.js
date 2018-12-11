@@ -1,4 +1,6 @@
 const ScoreTextStyle = { "letterSpacing": 2, "fontFamily" : "Arial Black", "fill": "#000","fontSize": 20,"fontVariant": "small-caps"};
+const INITIAL_LIFES = 3;
+const MAX_LIFES = 20;
 
 class ForegroundManager {
     constructor(app, container, wordSet, level) {
@@ -11,6 +13,7 @@ class ForegroundManager {
 
         this.entityViews = [];
 
+        // The initial number of ticks before the first entity gets spawned.
         this.ticks = 100;
         
         this.wordList = wordSet;
@@ -18,6 +21,8 @@ class ForegroundManager {
         this.score = 0;
 
         this.level = level;
+
+        this.lifes = INITIAL_LIFES;
 
         // Class variables
         this.entityLimit = 10;
@@ -33,13 +38,13 @@ class ForegroundManager {
         
         // TODO: Investigate if deleting by forEach works (it should not by observations from screenManager.)
 
+        while(this.container.children.length != 0) {
+            this.container.children[0].destroy();
+        }
+
         this.entityViews.forEach((element, index, array) => {
             this.destroyEntity(element);
         });
-
-        this.container.children.forEach((element, index, array) => {
-            element.destroy();
-        })
     }
 
     calculateScore(age, length) {
@@ -59,6 +64,14 @@ class ForegroundManager {
         // Correction so it is not possible to obtain negative score
         if (finalScore < 10 ) {
             finalScore = 10;
+        }
+
+        // 
+        if (
+            Utils.detectScoreOverTreshold(1000, this.score, this.score + finalScore) &&
+            this.lifes < MAX_LIFES
+        ) {
+            this.updateLifeIndicator(false);
         }
 
         this.score += finalScore;
@@ -90,6 +103,45 @@ class ForegroundManager {
         this.container.addChild(scoreText);
     }
 
+    addLifeIndicator() {
+        
+        var healthIndicators = [];
+
+        for (let i = 0; i < MAX_LIFES; i++) {
+            var sprite = new PIXI.Sprite(
+                PIXI.loader.resources["assets/images/heart-icon.png"].texture
+            );
+
+            let xOffset =  i * (32 + 2);
+
+            sprite.position.set(
+                35 + xOffset,
+                35
+            );
+
+            sprite.visible = false;
+
+            this.container.addChild(sprite);
+            healthIndicators.push(sprite);
+            this.healthIndicators = healthIndicators;
+        }
+
+        for (let i = 0; i < INITIAL_LIFES; i++) {
+            healthIndicators[i].visible = true;
+        }
+
+    }
+
+    updateLifeIndicator(shouldDecrement = true) {
+        if (shouldDecrement) {
+            this.lifes -= 1;
+            this.healthIndicators[this.lifes].visible = false;
+        } else {
+            this.healthIndicators[this.lifes].visible = true;
+            this.lifes += 1;
+        }
+    }
+
     updateScoreIndicator(value) {
         let scoreIndicator = this.container.getChildByName("ScoreIndicator");
         log(scoreIndicator);
@@ -98,9 +150,6 @@ class ForegroundManager {
             scoreIndicator.style = ScoreTextStyle;
         }
     }
-
-    // TODO: This class should probably contain the calls for wordlists
-    // and creation of entities for the levels.
 
     createEntity(word, isEnemy) {
         // Game operates with event.keyCode which is always uppercase (the KEY)
@@ -121,10 +170,11 @@ class ForegroundManager {
     destroyEntity(entity) {
         log("Destroying entity.");
 
-        // Remove all references to the entity from FGManager.
-        this.entityViews.filter(el => el.model.word !== entity.model.word);
-        log(this.entityViews);
-        
+        // Check whether entity has been targeted, if yes, reset currentTarget
+        if (entity.model.wordProgress !== "") {
+            this.currentTarget = null;
+        }
+
         let toDelete;
         for(let i = 0; i < this.entityViews.length; i++) {
             if (this.entityViews[i].model.word === entity.model.word) {
@@ -228,11 +278,14 @@ class ForegroundManager {
         }
 
         // Check game ending condition
-        if (this.isLevelBeaten()) {
+        let hasPlayerLost = this.hasPlayerLost();
+        if (this.isLevelBeaten() || hasPlayerLost) {
 
             // Try to get the player name for the scoreboard & save score.
-            let playerName = prompt("Enter your name:");
+            let playerName = prompt("Enter your name:"); // TODO: Replace this with in-game rendered pop-up.
             GameStore.saveScore(this.level, this.score, playerName);
+
+            // FUTURE: Different logic possible for player losing by comparison on hasPlayerLost property.
 
             // If the next level after this one was not beaten before, unlock it.
             let lastUnlockedLevel = parseInt(GameStore.getLastUnlockedLevel());
@@ -241,7 +294,6 @@ class ForegroundManager {
                 GameStore.setLevelCompleted(this.level);
             }
 
-            alert("Congratulations! You have beaten the level.");   // TODO: Replace this with in-game rendered pop-up.
             return "LEVEL-FINISHED-FLAG-TERMINATED";
         } else {
             return "LEVEL-IN-PROGRESS";
@@ -250,6 +302,10 @@ class ForegroundManager {
 
     isLevelBeaten() {
         return this.wordList.length == 0 && this.entityViews.length == 0;
+    }
+
+    hasPlayerLost() {
+        return this.lifes <= 0;
     }
 }
 
@@ -395,7 +451,7 @@ class EntityView {
         // Update entity age every tick by one
         this.model.age += 1;
 
-        if (this.container.position.x > -this.container.width) {
+        if (this.container.position.x > 0) {
             // Movement towards the player
             this.container.position.x -= 0.5 * this.movementSpeedMultiplier;
             
@@ -413,18 +469,11 @@ class EntityView {
             } else {
                 this.shouldMoveUpward = true;
             }
-
-            // Randomized movement up and down
-            /*if (this.container.position.y + 1 < app.renderer.height -1) {
-                let upOrDown = Utils.randomNumberFromRange(0, 1) < 0.5 ? -1 : 1;
-                this.container.position.y += upOrDown;
-            } else {
-                this.container.position.y -= 1; // TODO: same check to avoid escaping over the top border.
-            }*/
         } else {
-            // Once it passes the player's side of the screen, put it back on
-            // start
-            this.container.position.x = app.renderer.width + this.container.width;
+            // Once it passes the player's side of the screen, subtract the 
+            // life from player and destroy entity.
+            FGManager.updateLifeIndicator(true);    // FUTURE: This is not nice way to do it. Poor design phase.
+            FGManager.destroyEntity(this);
             log("Entity went of the screen. Putting it back to start.");
         }
     }

@@ -47,7 +47,12 @@ class Utils {
             case 15: return 9;
             case 16: return 10;  
         }
+    }
 
+    static detectScoreOverTreshold(treshold, oldValue, newValue) {
+        let tresholdsInOld = Math.floor(oldValue / treshold);
+        let tresholdsInNew = Math.floor(newValue / treshold);
+        return tresholdsInNew > tresholdsInOld;
     }
 }
 

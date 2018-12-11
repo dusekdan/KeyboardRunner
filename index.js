@@ -68,6 +68,7 @@ const startGame = (level) => {
     // Create player entity and put it into the game
     FGManager.addPlayerEntity();
     FGManager.addScoreIndicator();
+    FGManager.addLifeIndicator();
 
     // Set up the basics for rendered canvas.
     app.renderer.backgroundColor = 0x22a7f0;
