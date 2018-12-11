@@ -285,13 +285,13 @@ class ForegroundManager {
             let playerName = prompt("Enter your name:"); // TODO: Replace this with in-game rendered pop-up.
             GameStore.saveScore(this.level, this.score, playerName);
 
-            // FUTURE: Different logic possible for player losing by comparison on hasPlayerLost property.
-
-            // If the next level after this one was not beaten before, unlock it.
-            let lastUnlockedLevel = parseInt(GameStore.getLastUnlockedLevel());
-            if (lastUnlockedLevel == this.level) {
-                log("trying to unlock " + this.level);
-                GameStore.setLevelCompleted(this.level);
+            if (!hasPlayerLost) {
+                // If the next level after this one was not beaten before, unlock it.
+                let lastUnlockedLevel = parseInt(GameStore.getLastUnlockedLevel());
+                if (lastUnlockedLevel == this.level) {
+                    log("trying to unlock " + this.level);
+                    GameStore.setLevelCompleted(this.level);
+                }
             }
 
             return "LEVEL-FINISHED-FLAG-TERMINATED";
