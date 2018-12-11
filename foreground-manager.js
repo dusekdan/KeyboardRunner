@@ -112,6 +112,9 @@ class ForegroundManager {
         // Entity view has reference to Entity object and is already responsible
         // for drawing the entity into this.container.
         var entityView = new EntityView(entityObject, this.container);
+        entityView.setEntityMovementSpeedMultiplier(
+            Utils.getSpeedMultiplierForLevel(this.level)
+        );
         this.entityViews.push(entityView);
     }
 
@@ -281,6 +284,8 @@ class EntityView {
         this.model = model;
         this.parent = parentContainer;
 
+        this.movementSpeedMultiplier = 1;
+
         // Create graphics object
         this.container = new PIXI.Container();
 
@@ -318,6 +323,10 @@ class EntityView {
         textElement.position.set(0, 0);
 
         return textElement;
+    }
+
+    setEntityMovementSpeedMultiplier(value) {
+        this.movementSpeedMultiplier = value;
     }
 
     updateView() {
@@ -381,7 +390,7 @@ class EntityView {
 
         if (this.container.position.x > -this.container.width) {
             // Movement towards the player
-            this.container.position.x -= 0.5;
+            this.container.position.x -= 0.5 * this.movementSpeedMultiplier;
             
             // Randomized movement up and down
             if (this.container.position.y + 1 < app.renderer.height -1) {
