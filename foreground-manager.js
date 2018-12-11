@@ -285,6 +285,7 @@ class EntityView {
         this.parent = parentContainer;
 
         this.movementSpeedMultiplier = 1;
+        this.shouldMoveUpward = true;
 
         // Create graphics object
         this.container = new PIXI.Container();
@@ -307,6 +308,12 @@ class EntityView {
             app.renderer.width,
             Math.floor(Utils.randomNumberFromRange(250, 525))
         );
+
+        // Prepare range for entity upward and downward movement
+        // FUTURE: Determination whether to render entity with wings or not comes here.
+        let movementRange = 15;
+        this.movementRangeTop = this.container.y - movementRange;
+        this.movementRangeBottom = this.container.y;
         
         // Put the child on screen
         this.parent.addChild(this.container);
@@ -392,13 +399,28 @@ class EntityView {
             // Movement towards the player
             this.container.position.x -= 0.5 * this.movementSpeedMultiplier;
             
+            // Linear movement up and down
+            // Note: Everything is reversed, because [0,0] is top left corner.
+            let updateJump = 0.5;
+            if (this.container.position.y > this.movementRangeTop && this.shouldMoveUpward) {
+                this.container.position.y -= updateJump;
+            } else {
+                this.shouldMoveUpward = false;
+            }
+
+            if (this.container.position.y < this.movementRangeBottom && this.shouldMoveUpward === false) {
+                this.container.position.y += updateJump;
+            } else {
+                this.shouldMoveUpward = true;
+            }
+
             // Randomized movement up and down
-            if (this.container.position.y + 1 < app.renderer.height -1) {
+            /*if (this.container.position.y + 1 < app.renderer.height -1) {
                 let upOrDown = Utils.randomNumberFromRange(0, 1) < 0.5 ? -1 : 1;
                 this.container.position.y += upOrDown;
             } else {
                 this.container.position.y -= 1; // TODO: same check to avoid escaping over the top border.
-            }
+            }*/
         } else {
             // Once it passes the player's side of the screen, put it back on
             // start
