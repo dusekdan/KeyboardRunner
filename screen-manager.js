@@ -76,7 +76,6 @@ class MainMenuScreen {
         if (buttons.length == 4) {
             // PLAY button
             buttons[0].on('pointerdown', () => {
-                log("Play clicked...");
                 screenManager.hideActiveScreen();
                 startGame(
                     GameStore.getLastUnlockedLevel()
@@ -392,7 +391,6 @@ class LevelSelectScreen {
             level.position.set(xOffset + xHorizontalCorrection, yOffset);
 
             // Allow clicking only on the unlocked levels
-            log("If " + (i+1) + " <= " + GameStore.getLastUnlockedLevel())
             if ((i+1) <= GameStore.getLastUnlockedLevel()) {
                 level.interactive = true;
                 level.buttonMode = true;
@@ -406,7 +404,6 @@ class LevelSelectScreen {
 
 
             levels.push(level);
-            
         }
         return levels;
     }
