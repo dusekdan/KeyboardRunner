@@ -5,46 +5,36 @@ const MAX_LIFES = 20;
 class ForegroundManager {
     constructor(app, container, wordSet, level) {
         log("Foreground manager created");
+        
+        // Render object references
         this.container = container;
-
-        this.entities = {};
-
-        this.entitiesL = [];
-
         this.entityViews = [];
 
-        // The initial number of ticks before the first entity gets spawned.
-        this.ticks = 100;
-        
-        this.wordList = wordSet;
-
+        // Basic game launch settings
         this.score = 0;
-
         this.level = level;
-
+        this.wordList = wordSet;
         this.lifes = INITIAL_LIFES;
-
-        // Class variables
-        this.entityLimit = 10;
-        this.entitySize = 25;
-
         this.currentTarget = null;
 
-        //this.createEntity('testword', false);
+        // Environment settings
+        this.entityLimit = 10;
+        this.entitySize = 25;
+        
+        // The initial number of ticks before the first entity gets spawned.
+        this.ticks = 100;
     }
 
     destructor() {
         this.player.destroy();
         
-        // TODO: Investigate if deleting by forEach works (it should not by observations from screenManager.)
-
         while(this.container.children.length != 0) {
             this.container.children[0].destroy();
         }
 
-        this.entityViews.forEach((element, index, array) => {
-            this.destroyEntity(element);
-        });
+        while(this.entityViews.length != 0) {
+            this.destroyEntity(this.entityViews[0]);
+        }
     }
 
     calculateScore(age, length) {
@@ -66,7 +56,6 @@ class ForegroundManager {
             finalScore = 10;
         }
 
-        // 
         if (
             Utils.detectScoreOverTreshold(1000, this.score, this.score + finalScore) &&
             this.lifes < MAX_LIFES
@@ -95,7 +84,7 @@ class ForegroundManager {
 
     addScoreIndicator() {
         var scoreText = new PIXI.Text("Score: " + 0, ScoreTextStyle);
-        scoreText.name = "ScoreIndicator"; // TODO: Test what is in .name by default (inherited)
+        scoreText.name = "ScoreIndicator";
         scoreText.position.set(
             app.renderer.width - 300,
             25
@@ -104,7 +93,6 @@ class ForegroundManager {
     }
 
     addLifeIndicator() {
-        
         var healthIndicators = [];
 
         for (let i = 0; i < MAX_LIFES; i++) {
@@ -129,7 +117,6 @@ class ForegroundManager {
         for (let i = 0; i < INITIAL_LIFES; i++) {
             healthIndicators[i].visible = true;
         }
-
     }
 
     updateLifeIndicator(shouldDecrement = true) {
@@ -155,12 +142,12 @@ class ForegroundManager {
         // Game operates with event.keyCode which is always uppercase (the KEY)
         let normalizedWord = word.toUpperCase();
 
-        var entityObject = new Entity(normalizedWord, isEnemy);
-        this.entitiesL.push(entityObject); // # Maybe remove after entityViews are up and running.
-
         // Entity view has reference to Entity object and is already responsible
         // for drawing the entity into this.container.
-        var entityView = new EntityView(entityObject, this.container);
+        var entityView = new EntityView(
+            new Entity(normalizedWord, isEnemy),
+            this.container, this.getBestHeightForEntitySpawn()
+        );
         entityView.setEntityMovementSpeedMultiplier(
             Utils.getSpeedMultiplierForLevel(this.level)
         );
@@ -300,6 +287,73 @@ class ForegroundManager {
         }
     }
 
+    deprecated_getBestHeightForEntitySpawn() {
+        let maxDistance = 0;
+        let pointA, pointB;
+        
+        // Calculate the best height starting at 2+ existing entities.
+        if (this.entityViews.length > 1) {
+            for (i = 0; i < this.entityViews.length; i++) {
+                if (i === this.entityViews.length-1) {
+                    // Break on last item (has no neighbor)
+                }
+                let point = this.entityViews[i].container.position.y;
+                let neighbor = this.entityViews[i+1].container.position.y;
+                let distance = Math.abs(point-neighbor);
+                if (distance > maxDistance) {
+                    maxDistance = distance;
+                    pointA = point;
+                    pointB = neighbor;
+                }
+            }
+
+            return (pointA + maxDistance/2);
+        } else {
+            if (this.entityViews.length === 1) {
+                // Return center point between the greater range
+                let point = this.entityViews[0].container.position.y;
+                let distanceToTop = 525 - point;
+                let distanceToBottom = point - 250;
+
+                return distanceToTop > distanceToBottom ? (distanceToTop/2) + point : point - (distanceToBottom/2);
+
+            } else {
+                // Return something completely random within range.
+                return Utils.randomNumberFromRange(250, 525);
+            }
+        }
+    }
+
+    getBestHeightForEntitySpawn() {
+        let allPoints = [250, 525];
+        let maxDistance = 0;
+        let originPoint;
+
+        if (this.entityViews.length === 0) {
+            return Utils.randomNumberFromRange(250, 525);
+        } else {
+            this.entityViews.forEach(element => {
+                allPoints.push(element.container.position.y);
+            });
+            allPoints.sort();
+
+            for(let i = 0; i < allPoints.length; i++) {
+                if (i === allPoints.length-1) { break; }    // Has no neighbor.
+
+                let point = allPoints[i];
+                let neighbor = allPoints[i+1];
+                
+                let distance = Math.abs(point-neighbor);
+                if (distance > maxDistance) {
+                    maxDistance = distance;
+                    originPoint = point;
+                }
+            }
+
+            return Math.floor(originPoint + (maxDistance/2));
+        }
+    }
+
     isLevelBeaten() {
         return this.wordList.length == 0 && this.entityViews.length == 0;
     }
@@ -336,7 +390,7 @@ class Entity {
 
 
 class EntityView {
-    constructor(model, parentContainer) {
+    constructor(model, parentContainer, height) {
         this.model = model;
         this.parent = parentContainer;
 
@@ -362,7 +416,7 @@ class EntityView {
         // Randomize height in which the entity is going to be displayed.
         this.container.position.set(
             app.renderer.width,
-            Math.floor(Utils.randomNumberFromRange(250, 525))
+            height /*Math.floor(Utils.randomNumberFromRange(250, 525))*/
         );
 
         // Prepare range for entity upward and downward movement
