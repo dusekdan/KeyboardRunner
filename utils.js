@@ -5,8 +5,21 @@ class Utils {
         return start + Math.random() * range;
     }
 
+    static randomIntNumberFromRange(start, end) {
+        let min = Math.ceil(start);
+        let max = Math.floor(end);
+        return Math.floor(Math.random() * (max-min+1)) + min;
+    }
+
     static randomIntColor () {
         return parseInt(Math.floor(Math.random()*16777215).toString(16), 16)
+    }
+
+    static randomElement(array) {
+        let elementInBounds = Math.floor(
+            Utils.randomIntNumberFromRange(0, array.length-1)
+        );
+        return array[elementInBounds];
     }
 
     static createSpriteFromGraphics(renderer, graphics) {
@@ -429,4 +442,31 @@ class WordSet {
                 ];
         }
     }
+}
+
+class Interval {
+    constructor(start, end) {
+        this.start = start;
+        this.end = end;
+    }
+
+    contains(point) {
+        return point >= this.start && point <= this.end;
+    }
+
+    covers(pointA, pointB) {
+        // No collision when both points are either less or greater than both
+        // start and end at the same it.
+        if (
+            (pointA < this.start && pointB < this.start) ||
+            (pointA > this.end && pointB > this.end)
+        ) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    getStart() { return this.start; }
+    getEnd() { return this.end; }
 }

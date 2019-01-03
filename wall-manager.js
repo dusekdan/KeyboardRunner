@@ -12,6 +12,8 @@ class WallManager {
 
         // First wall spawns after 1st frame (and slides in from the right)
         this.ticks = 1;
+
+        this.biomeNumber = 0;
     }
 
     runTick() {
@@ -37,8 +39,10 @@ class WallManager {
     spawnBiome(type) {
         // Second parameter is the scale of the basic biom length
         // e.g. 1 for standard width, 2 for two screens biom, ...
-        let biomLength = Math.floor(Utils.randomNumberFromRange(1,4));
+        let biomLength = Math.floor(Utils.randomNumberFromRange(2,5));
         let biome = this.BG.constructBiome(type, biomLength);
+        this.biomeNumber += 1;
+        biome.setId(this.biomeNumber);
         this.biomes.push(biome);
         this.container.addChild(biome.container);
         return biome;
