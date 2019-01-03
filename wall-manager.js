@@ -1,69 +1,52 @@
 class WallManager {
-    constructor (app, container) {
+    constructor (app, container) { // TODO: Extend by biomes set+length to be generated.
+        // Screen rendering references.
         this.renderer = app.renderer;
         this.container = container;
-        this.wallList = [];
 
-        // First wall will be spawned after 240 frames (roughly 4 seconds)
-        this.ticks = 240;
-    }
+        this.biomes = [];
+        this.BG = new BiomeGenerator(this.renderer); 
 
-    destructor() {
-        this.wallList.forEach((element, index, array) => {
-            element.destroy();
-        })
-    }
+        // Manager properties
+        this.updateSpeed = 4;   // How fast biomes move to left?
 
-    spawnWall() {
-        let wallGraphics = new PIXI.Graphics();
-        wallGraphics.beginFill(Utils.randomIntColor());     // TODO: Fetch color here inteligently.
-        wallGraphics.lineStyle(0);
-        wallGraphics.drawRect(0, 135, this.renderer.width, this.renderer.height);
-        wallGraphics.endFill();
-
-        let wall = Utils.createSpriteFromGraphics(this.renderer, wallGraphics);
-        wall.position.set(
-            this.renderer.width,
-            15
-        );
-        wall.scale.set(2.0, 1.0);
-
-        this.wallList.push(wall);
-        this.container.addChild(wall);
+        // First wall spawns after 1st frame (and slides in from the right)
+        this.ticks = 1;
     }
 
     runTick() {
-
+        // Once ticks are depleted, spawn biom and re-schedule next ticks 
+        // depletion, to spawn the next biom.
         this.ticks -= 1;
-
         if (this.ticks == 0) {
-            // Do some ticking operations
-            this.spawnWall();
-            
-            // Standard full screen wall (1200px width) travels by 4px per tick, 
-            // is of the screen in 600 ticks (1200 on visible screen, 1200 until its all gone)
-            // next wall need to be created in half of this time (by the time the first wall 
-            // travels its 1200px and starts disappearing)).
-            // If more generics is going to be added here, the ticks until the next wall is spawned
-            // must be half the updates required for a wall to leave.
-            // Example:
-            // Wall length in ticks: ... determine whether to add new biom with duration in ticks (including
-            // or excluding disappearing phase). 
-            this.ticks = 1200/2; 
-            
-            // 510 - roughly 8.5s (60*8.5)
-            log("WallManager, walls: " + this.wallList.length);
+            // TODO: Get these biomes and their supposed lengths from some sort
+            // of a "biomes per level set" or something, so it is not completely random.
+            let spawnedBiome = this.spawnBiome("DESERT"); 
+            this.ticks = spawnedBiome.nextBiomeSpawn;
         }
-        
-        this.wallList.forEach(function(element, index, array) {
-            element.position.x -= 4;
 
-            let bounds = element.getBounds();
-            if (element.position.x + bounds.width < 0) {
-                element.destroy();
-                array.splice(0,1); // Start at index 0 (the first wall) and remove one element (itself)
-                console.log("Wall reached its usefulness. Time to remove it.");
+        this.biomes.forEach((biome, index, array) => {
+            biome.updatePosition(this.updateSpeed);
+            if (biome.isOffScreen()) {
+                biome.destructor();
+                array.splice(0,1);
             }
-        }.bind(this));
+        });
+    }
+
+    spawnBiome(type) {
+        // Second parameter is the scale of the basic biom length
+        // e.g. 1 for standard width, 2 for two screens biom, ...
+        let biomLength = Math.floor(Utils.randomNumberFromRange(1,4));
+        let biome = this.BG.constructBiome(type, biomLength);
+        this.biomes.push(biome);
+        this.container.addChild(biome.container);
+        return biome;
+    }
+
+    destructor() {
+        this.biomes.forEach(element => {
+            element.destructor();
+        });
     }
 }
