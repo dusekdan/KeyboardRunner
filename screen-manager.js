@@ -73,6 +73,11 @@ class MainMenuScreen {
             this.container.addChild(buttons[i]);
         }
 
+        // Put stickman to menu
+        let stickman = new PIXI.Sprite(PIXI.loader.resources[menuFolder + "stickman.png"].texture);
+        stickman.position.set(35,35);
+        this.container.addChild(stickman);
+
         if (buttons.length == 4) {
             // PLAY button
             buttons[0].on('pointerdown', () => {
@@ -102,41 +107,33 @@ class MainMenuScreen {
     // Screen specific methods (visual objects)
     createButtons() {
         const btnWidth = 500;
-        const btnHeight = 75;
+        const btnHeight = 70;
         const btnMargin = 50;
+        const btnBaseMarginTop = 75;
 
         var buttons = [];
+        var buttonNames = ["PlayButton", "LevelSelectButton", "HighScoreButton", "ExitButton"];
 
-        var texts = ["Play / Continue", "Level Select", "Score Board", "Exit"];
-        
-        // There are four buttons on MainMenu screen
-        for (let i = 0; i < 4; i++) {
-            let graphic = new PIXI.Graphics();
-            let color = Utils.randomIntColor();
-            
-            graphic.beginFill(color);
-            graphic.lineStyle(0);
-            graphic.drawRect(0, 0, btnWidth, btnHeight);
-            graphic.endFill();
-            
-            graphic.addChild(
-                this.prepareButtonText(texts[i], "black")
-            );
-            
-            var btn = Utils.createSpriteFromGraphics(app.renderer, graphic);
-            btn.interactive = true;
-            btn.buttonMode = true;
-            
-            // Position the buttons next to each other 
-            btn.position.set(
+        for (let i = 0; i < buttonNames.length; i++) {
+            let button = this.prepareButtonSprite(buttonNames[i]);
+            button.interactive = true;
+            button.buttonMode = true;
+            button.position.set(
                 (app.renderer.width / 2) - (btnWidth / 2),
-                btnMargin + (i * (btnHeight + btnMargin) )
+                btnBaseMarginTop + (i * (btnHeight + btnMargin))
             );
-
-            buttons.push(btn);
+            buttons.push(button);
         }
 
         return buttons;
+    }
+
+    prepareButtonSprite(buttonName) {
+        let sprite = new PIXI.Sprite(
+            PIXI.loader.resources[menuFolder + buttonName + ".png"].texture
+        );
+        
+        return sprite;
     }
 
     prepareButtonText(text, color) {

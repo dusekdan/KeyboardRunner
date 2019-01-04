@@ -1,9 +1,19 @@
 const assetsFolder = "assets/";
 const imagesFolder = assetsFolder + "images/";
+const menuFolder = imagesFolder + "MAIN_MENU/";
 const desertBiomeFolder = imagesFolder + "BIOME_DESERT/";
 const winterBiomeFolder = imagesFolder + "BIOME_WINTER/";
 
 const resources = [
+    menuFolder + "PlayButton.png",
+    menuFolder + "PlayButton_hover.png",
+    menuFolder + "LevelSelectButton.png",
+    menuFolder + "LevelSelectButton_hover.png",
+    menuFolder + "HighScoreButton.png",
+    menuFolder + "HighScoreButton_hover.png",
+    menuFolder + "ExitButton.png",
+    menuFolder + "ExitButton_hover.png",
+    menuFolder + "stickman.png",
     imagesFolder + "cloud_1.png",
     imagesFolder + "cloud_2.png",
     imagesFolder + "entity_place_holder.png",

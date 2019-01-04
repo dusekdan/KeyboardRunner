@@ -17,7 +17,7 @@ const init = () => {
     
     if (document) {
         document.getElementById('the-play-screen').appendChild(app.view);
-        app.renderer.backgroundColor = 0x22a7f0;
+        app.renderer.backgroundColor = 0x757575;
 
         // Check whether GameStore with previous state exists
         if (!GameStore.checkStorageExist()) {
