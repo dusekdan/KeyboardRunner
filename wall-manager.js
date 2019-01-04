@@ -1,5 +1,5 @@
 class WallManager {
-    constructor (app, container) { // TODO: Extend by biomes set+length to be generated.
+    constructor (app, container) {
         // Screen rendering references.
         this.renderer = app.renderer;
         this.container = container;
@@ -8,7 +8,7 @@ class WallManager {
         this.BG = new BiomeGenerator(this.renderer); 
 
         // Manager properties
-        this.updateSpeed = 4;   // How fast biomes move to left?
+        this.updateSpeed = 4;   // How fast biomes move to left
 
         // First wall spawns after 1st frame (and slides in from the right)
         this.ticks = 1;
@@ -21,10 +21,7 @@ class WallManager {
         // depletion, to spawn the next biom.
         this.ticks -= 1;
         if (this.ticks == 0) {
-            // TODO: Get these biomes and their supposed lengths from some sort
-            // of a "biomes per level set" or something, so it is not completely random.
             let spawnedBiome = Math.random() > 0.5 ? this.spawnBiome("WINTER") : this.spawnBiome("DESERT"); 
-            //let spawnedBiome = this.spawnBiome("WINTER");
             this.ticks = spawnedBiome.nextBiomeSpawn;
         }
 
