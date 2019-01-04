@@ -33,6 +33,9 @@ class ScreenManager {
             case "MainMenu":
                 this.mainMenuScreen.showScreen();
                 this.activeScreen = this.mainMenuScreen;
+                
+                // Reset background color. (ugly hack)
+                app.renderer.backgroundColor = 0x757575;
             break;
             case "LevelSelect":
                 this.levelSelectScreen.showScreen();
@@ -74,9 +77,7 @@ class MainMenuScreen {
         }
 
         // Put stickman to menu
-        let stickman = new PIXI.Sprite(PIXI.loader.resources[menuFolder + "stickman.png"].texture);
-        stickman.position.set(35,35);
-        this.container.addChild(stickman);
+        this.createMenuStickMan();
 
         if (buttons.length == 4) {
             // PLAY button
@@ -114,10 +115,20 @@ class MainMenuScreen {
         var buttons = [];
         var buttonNames = ["PlayButton", "LevelSelectButton", "HighScoreButton", "ExitButton"];
 
+        app.stage.interactive = true;
         for (let i = 0; i < buttonNames.length; i++) {
             let button = this.prepareButtonSprite(buttonNames[i]);
             button.interactive = true;
             button.buttonMode = true;
+
+            // Set up changing texture for hover (and pointing stickman)
+            button.mouseover = data =>  {
+                button.gotoAndStop(1);
+                this.updateMenuStickManTarget(i);
+            }
+            button.mouseout  = data =>  { 
+                button.gotoAndStop(0);
+            }
             button.position.set(
                 (app.renderer.width / 2) - (btnWidth / 2),
                 btnBaseMarginTop + (i * (btnHeight + btnMargin))
@@ -128,10 +139,33 @@ class MainMenuScreen {
         return buttons;
     }
 
+    createMenuStickMan() {
+        let stickman = new PIXI.MovieClip([
+            PIXI.loader.resources[menuFolder + "stickman_1.png"].texture,
+            PIXI.loader.resources[menuFolder + "stickman_2.png"].texture,
+            PIXI.loader.resources[menuFolder + "stickman_3.png"].texture,
+            PIXI.loader.resources[menuFolder + "stickman_4.png"].texture,
+        ]);
+        stickman.position.set(35,35);
+        this.menuStickMan = stickman;
+        this.container.addChild(this.menuStickMan);
+    }
+
+    updateMenuStickManTarget(targetNumber) {
+        if (targetNumber < 4 && targetNumber >= 0) {
+            this.menuStickMan.gotoAndStop(targetNumber);
+        } else {log("ERR: Stickman can not really point there. Sorry.");}
+    }
+
     prepareButtonSprite(buttonName) {
-        let sprite = new PIXI.Sprite(
+        /*let sprite = new PIXI.Sprite(
             PIXI.loader.resources[menuFolder + buttonName + ".png"].texture
-        );
+        );*/
+
+        let sprite = new PIXI.MovieClip([
+            PIXI.loader.resources[menuFolder + buttonName + ".png"].texture, 
+            PIXI.loader.resources[menuFolder + buttonName + "_hover.png"].texture
+        ]);
         
         return sprite;
     }
@@ -188,21 +222,11 @@ class ScoreBoardScreen {
     }
 
     createBackButton() {
-        var G = new PIXI.Graphics();
-        G.beginFill(0xffddee);
-        G.lineStyle(2, 0xff00ee);
-        G.drawRect(0, 0, 200, 50);
-        G.endFill();
-
-        var T = new PIXI.Text("<< Back", { "fontFamily": "Arial Black", "fontSize": 18 });
-        T.anchor.set(0.5, 0.5);
-        T.position.set(200/2, 50/2);
-
-        G.addChild(T);
-
-        var S = Utils.createSpriteFromGraphics(app.renderer, G);
+        var S = new PIXI.Sprite(
+            PIXI.loader.resources[levelFolder + "backbutton.png"].texture
+        );
         S.interactive = true;
-        S.buttonmode = true;
+        S.buttonMode = true;
 
         S.on('pointerdown', () => {
             screenManager.switchToScreen("MainMenu");
@@ -311,21 +335,11 @@ class LevelSelectScreen {
     }
 
     createBackButton() {
-        var G = new PIXI.Graphics();
-        G.beginFill(0xffddee);
-        G.lineStyle(2, 0xff00ee);
-        G.drawRect(0, 0, 200, 50);
-        G.endFill();
-
-        var T = new PIXI.Text("<< Back", { "fontFamily": "Arial Black", "fontSize": 18 });
-        T.anchor.set(0.5, 0.5);
-        T.position.set(200/2, 50/2);
-
-        G.addChild(T);
-
-        var S = Utils.createSpriteFromGraphics(app.renderer, G);
+        var S = new PIXI.Sprite(
+            PIXI.loader.resources[levelFolder + "backbutton.png"].texture
+        );
         S.interactive = true;
-        S.buttonmode = true;
+        S.buttonMode = true;
 
         S.on('pointerdown', () => {
             screenManager.switchToScreen("MainMenu");
@@ -336,8 +350,6 @@ class LevelSelectScreen {
 
     }
 
-    // TODO: Introduce loading of the game state to display locked and unlocked 
-    // levels.
     createLevelSelectGrid() {
         const levelIconMargin = 25;
         var yCorrection = 1;
@@ -346,6 +358,9 @@ class LevelSelectScreen {
         var levels = [];
 
         let levelBGC =  0x2174a8;
+
+        let levelNames = ["01", "02", "03", "04", "05", "06", "07", "08", "09", 
+        "10", "11", "12", "13", "14", "15", "16"];
 
         for (let i = 0; i < MAX_LEVELS_CAP; i++) {
             let levelGraphics = new PIXI.Graphics();
@@ -384,7 +399,10 @@ class LevelSelectScreen {
                 );
             }
 
-            var level = Utils.createSpriteFromGraphics(app.renderer, levelGraphics);
+            var level = new PIXI.Sprite(
+                PIXI.loader.resources[levelFolder + levelNames[i] + ".png"].texture
+            );
+            //var level = Utils.createSpriteFromGraphics(app.renderer, levelGraphics);
             level.position.set(xOffset + xHorizontalCorrection, yOffset);
 
             // Allow clicking only on the unlocked levels
