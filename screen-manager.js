@@ -237,31 +237,7 @@ class ScoreBoardScreen {
 
     }
 
-    // TODO: Introduced scoreboard table creation and retrieval.
     createScoreBoardTable() {
-
-        // Put High-Scores text above scoreboard table
-        const HighScoreTextStyle = {
-            "fill": [
-                "#d23cc4",
-                "#4b1c9b"
-            ],
-            "fontFamily": "Arial Black",
-            "fontSize": 41,
-            "letterSpacing": 3,
-            "lineJoin": "bevel",
-            "miterLimit": 0,
-            "strokeThickness": 1
-        }
-
-        var highScoreText = new PIXI.Text("High Scores", HighScoreTextStyle);
-        highScoreText.anchor.set(0.5, 0.5);
-        highScoreText.position.set(
-            (app.renderer.width / 2),
-            (SCORE_RECTS_TOP_OFFSET_BASE - 10)  / 2
-        );
-        this.container.addChild(highScoreText);
-
         const ScoreRowTextStyle = { "fontFamily": "Arial Black", "fontSize": 18 };
 
         // Obtain data for high score table rows
@@ -269,7 +245,7 @@ class ScoreBoardScreen {
 
         for (let i = 0; i < highScoreRows.length; i++) {
             var row = new PIXI.Graphics();
-            row.beginFill(0xdbb983, 0.5);
+            row.beginFill(0xd1c4e9, 0.5);
             row.lineStyle(0);
             row.drawRect(0,0, SCORE_RECT_LENGTH, SCORE_RECT_HEIGHT);
             row.endFill();
@@ -363,10 +339,6 @@ class LevelSelectScreen {
         "10", "11", "12", "13", "14", "15", "16"];
 
         for (let i = 0; i < MAX_LEVELS_CAP; i++) {
-            let levelGraphics = new PIXI.Graphics();
-            levelGraphics.beginFill(levelBGC);
-            levelGraphics.lineStyle(0);
-
             if (i % 4 == 0 && i != 0) {
                 yCorrection += 1;
             } 
@@ -377,14 +349,14 @@ class LevelSelectScreen {
 
             let xHorizontalCorrection = (app.renderer.width / 2) - (2 * (this.iconLenght + levelIconMargin) )
 
-            levelGraphics.drawRect(
-                0, 0,
-                this.iconLenght, this.iconLenght);
-            levelGraphics.endFill();
+            var level = new PIXI.Sprite(
+                PIXI.loader.resources[levelFolder + levelNames[i] + ".png"].texture
+            );
+            level.position.set(xOffset + xHorizontalCorrection, yOffset);
 
             // Give a grey tint & padlock icon to the locked levels
             if ((i+1) > GameStore.getLastUnlockedLevel()) {
-                levelGraphics.tint = 0x636568;
+                level.tint = 0x636568;
 
                 // Icon
                 var padlock = new PIXI.Sprite(
@@ -392,18 +364,8 @@ class LevelSelectScreen {
                 );
                 padlock.anchor.set(0.5, 0.5);
                 padlock.position.set(this.iconLenght/2, this.iconLenght/2);
-                levelGraphics.addChild(padlock);
-            } else { // Put level number for unlocked levels
-                levelGraphics.addChild(
-                    this.prepareLevelButtonText((i+1), "black")
-                );
-            }
-
-            var level = new PIXI.Sprite(
-                PIXI.loader.resources[levelFolder + levelNames[i] + ".png"].texture
-            );
-            //var level = Utils.createSpriteFromGraphics(app.renderer, levelGraphics);
-            level.position.set(xOffset + xHorizontalCorrection, yOffset);
+                level.addChild(padlock);
+            }            
 
             // Allow clicking only on the unlocked levels
             if ((i+1) <= GameStore.getLastUnlockedLevel()) {
