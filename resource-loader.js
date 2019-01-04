@@ -1,6 +1,6 @@
 const assetsFolder = "assets/";
 const imagesFolder = assetsFolder + "images/";
-const desertBiomeFolder = imagesFolder + "BIOM_DESERT/";
+const desertBiomeFolder = imagesFolder + "BIOME_DESERT/";
 const winterBiomeFolder = imagesFolder + "BIOME_WINTER/";
 
 const resources = [
