@@ -121,7 +121,7 @@ class ForegroundManager {
 
     updateLifeIndicator(shouldDecrement = true) {
         if (shouldDecrement) {
-            this.lifes -= 1;
+            //this.lifes -= 1;
             this.healthIndicators[this.lifes].visible = false;
         } else {
             this.healthIndicators[this.lifes].visible = true;

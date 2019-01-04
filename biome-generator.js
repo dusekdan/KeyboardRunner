@@ -38,6 +38,7 @@ class BiomeGenerator {
         let colorSet = [];
         switch(type) {
             case "DESERT":
+                this.biomeFolder = desertBiomeFolder;
 
                 itemSets["all"] = ["sandblock_01", "sandwall_01", 
                 "sandwall_02", "sandblock_01", "sandblock_01", "sandblock_01"];
@@ -61,6 +62,25 @@ class BiomeGenerator {
                 return this.constructBiom(screenLength, itemSets, itemLengths, colorSet);
             break;
             case "WINTER":
+                this.biomeFolder = winterBiomeFolder;
+                
+                itemSets["all"] = ["angry_snowman", "dead_snowman_full", 
+                "dead_snowman_head", "snowball_pack_01", "snowball_pack_02",
+                "snowball"];
+                itemSets["huge"] = ["angry_snowman", "dead_snowman_full"];
+                itemSets["medium"] = ["dead_snowman_head", "snowball_pack_01", "snowball_pack_02"];
+                itemSets["small"] = ["snowball"];
+                itemSets["tiny"] = ["angry_snowman", "dead_snowman_full", 
+                "dead_snowman_head", "snowball_pack_01", "snowball_pack_02"];
+
+                itemLengths["huge"] = {"angry_snowman": 82, "dead_snowman_full": 180};
+                itemLengths["medium"] = {"dead_snowman_head": 60, "snowball_pack_01": 60, "snowball_pack_02": 60};
+                itemLengths["small"] = {"snowball": 20};
+                itemLengths["tiny"] = {"angry_snowman": 28, "dead_snowman_full": 59, "dead_snowman_head": 25, "snowball_pack_01": 25, "snowball_pack_02": 25};
+
+                colorSet = [0xBBDEFB];
+
+                return this.constructBiom(screenLength, itemSets, itemLengths, colorSet);
             break;
             case "FOREST":
             break;
@@ -96,11 +116,6 @@ class BiomeGenerator {
         sprite.position.set(this.renderWidth, BIOME_BOTTOM_RANGE);
 
         return sprite;
-    }
-
-    // Normalize x coordinate for s scale. 
-    n(x, s) { // DO-NOT-USE
-        return (x/s);
     }
 
     populateBiom(sprite, itemSets, itemLengths) {
@@ -141,6 +156,9 @@ class BiomeGenerator {
         if (this.biomeType === "DESERT") {
             items.push("pyramid_01");
             sizes["pyramid_01"] = 110;
+        } else if (this.biomeType === "WINTER") {
+            // Skip rendering snowball in farbackground (way too small to be visible)
+            items = items.filter(item => item !== "snowball");
         }
 
         let screensToSeed = this.k;
@@ -188,6 +206,12 @@ class BiomeGenerator {
 
         let items = itemSets["all"];
         let sizes = itemLenghts["small"];
+
+        if (this.biomeType === "WINTER") {
+            // Winter biome only - Do not render "small" dead snowman's body in foreground.
+            items = items.filter(item => item !== "dead_snowman_full");
+            items = items.filter(item => item !== "angry_snowman");
+        }
 
         // DESERT-ONLY Only very small pyramids should be added to the background
         if (this.biomeType === "DESERT") {
@@ -247,13 +271,19 @@ class BiomeGenerator {
         let mediumItemLengths = itemLenghts["medium"];
         let smallItemLengths = itemLenghts["small"];
         
+        if (this.biomeType === "WINTER") {
+            // Winter biome only - Do not render "small" dead snowman's body in foreground.
+            foregroundItems = foregroundItems.filter(item => item !== "dead_snowman_full");
+            foregroundItems = foregroundItems.filter(item => item !== "angry_snowman");
+        }
+
         let screensToSeed = this.k;
         for (let i = 1; i <= screensToSeed; i++) {
             // Use 'i' as a 'k' for all screen-number relevant functions.
 
             // Pre-generate items to be placed on i-th screen (1 huge, 1 medium, 5 small)
             let rndHuge = Utils.randomElement(foregroundItemsHuge);
-            let rndMedium = Utils.randomElement(foregroundItemsMedium);
+            let rndMedium = [Utils.randomElement(foregroundItemsMedium)];
             let rndSmall = [];
             for (let i = 0; i < 5; i++) {
                 rndSmall.push(Utils.randomElement(foregroundItems));
@@ -326,8 +356,9 @@ class BiomeGenerator {
     }
 
     placeObjectTo(object, coordX, coordY, sprite, bSize) {
+        log("Trying to place: " + this.biomeFolder + object + ".png");
         let newSprite = new PIXI.Sprite(
-            PIXI.loader.resources[desertBiomFolder + object + ".png"].texture
+            PIXI.loader.resources[this.biomeFolder + object + ".png"].texture
         );
         newSprite.anchor.set(0, 1); // TODO: Rethink this decision.
         newSprite.scale.set(1/bSize, 1.0);
@@ -385,7 +416,7 @@ class BiomeGenerator {
             case "small":
             case "ultrasmall":
                 return new PIXI.Sprite(
-                    PIXI.loader.resources[desertBiomFolder + "pyramid_01_" + size + ".png"].texture
+                    PIXI.loader.resources[desertBiomeFolder + "pyramid_01_" + size + ".png"].texture
                 );
             default:
             throw new Error(

@@ -23,7 +23,8 @@ class WallManager {
         if (this.ticks == 0) {
             // TODO: Get these biomes and their supposed lengths from some sort
             // of a "biomes per level set" or something, so it is not completely random.
-            let spawnedBiome = this.spawnBiome("DESERT"); 
+            let spawnedBiome = Math.random() > 0.5 ? this.spawnBiome("WINTER") : this.spawnBiome("DESERT"); 
+            //let spawnedBiome = this.spawnBiome("WINTER");
             this.ticks = spawnedBiome.nextBiomeSpawn;
         }
 
