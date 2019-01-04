@@ -20,15 +20,45 @@ class BiomeGenerator {
     }
 
     /**
-     * Constructs biom object with its sprite container and children.
+     * Constructs biom object with its sprite container and children. Image
+     * resources, their different sized variants and biome colors are defined
+     * here.
+     * 
      * @param {*} type String type defined in this.BIOM_TYPES to be spawned.
      * @param {*} screenLength Integer multiplier of the screen length saying
      * how long newly generated biom should be.
      */
     constructBiome(type, screenLength) {
+        // Store reference to biome currently being constructer
+        this.biomeType = type;
+        
+        // Properoties specific for all the bioms.  
+        let itemSets = {};
+        let itemLengths = {};
+        let colorSet = [];
         switch(type) {
             case "DESERT":
-                return this.constructDesertBiom(screenLength);
+
+                itemSets["all"] = ["sandblock_01", "sandwall_01", 
+                "sandwall_02", "sandblock_01", "sandblock_01", "sandblock_01"];
+                itemSets["huge"] = ["sandblock_01"];
+                itemSets["medium"] = ["sandblock_01", "sandwall_01", 
+                "sandblock_01", "sandblock_01"];
+                itemSets["small"] = ["sandblock_01", "sandwall_01", 
+                "sandwall_02", "sandblock_01", "sandblock_01", 
+                "sandblock_01", "sandblock_01"];
+                itemSets["tiny"] = ["sandblock_01", "sandwall_01", 
+                "sandwall_02", "sandblock_01", "sandblock_01", 
+                "sandblock_01", "sandblock_01"];
+
+                itemLengths["huge"] = { "sandblock_01": 171, "sandwall_01":377, "sandwall_02": 326};
+                itemLengths["medium"] = {"sandblock_01": 120, "sandwall_01":232, "sandwall_02": 230};
+                itemLengths["small"] = {"sandblock_01": 50, "sandwall_01":172, "sandwall_02": 132};
+                itemLengths["tiny"] = {"sandblock_01": 15, "sandwall_01":57, "sandwall_02": 60};
+
+                colorSet = [0xffd54f, 0xffff81];
+
+                return this.constructBiom(screenLength, itemSets, itemLengths, colorSet);
             break;
             case "WINTER":
             break;
@@ -40,31 +70,32 @@ class BiomeGenerator {
         }
     }
 
-    constructDesertBiom(length) {
+    constructBiom(length, itemSets, itemLengths, colorSet) {
 
         // Keep the scaling coefficient to later scale children back down. 
         this.k = length;
 
-        let desertBiomBackgroundColors = [0xffd54f, 0xffff81];
+        let biome = this.prepareBiomeLayout(colorSet);
 
+        this.populateBiom(biome, itemSets, itemLengths);
+
+        return new Biome(this.k, biome);
+    }
+
+    prepareBiomeLayout(colorSet) {
+        // First, create Graphics object of the size of a screen, of given color.
         let biome = new PIXI.Graphics();
-        biome.beginFill(Utils.randomElement(desertBiomBackgroundColors));
+        biome.beginFill(Utils.randomElement(colorSet));
         biome.lineStyle(0);
         biome.drawRect(0, 0, this.renderWidth, this.renderHeight);
-        log("DRAWING BIOM, width:" + this.renderWidth + ", height:" + this.renderHeight);
         biome.endFill();
         
-        let biomeSprite = Utils.createSpriteFromGraphics(this.renderer, biome);
-        biomeSprite.scale.set(length, 1.0);
-        let bounds = biomeSprite.getBounds();
-        log("SCALED BIOM, width:" + bounds.width + ", height:" + bounds.height);
-        biomeSprite.position.set(this.renderWidth, BIOME_BOTTOM_RANGE);
+        // Then convert it to scaled sprite representing the actual biome plate.
+        let sprite = Utils.createSpriteFromGraphics(this.renderer, biome);
+        sprite.scale.set(this.k, 1.0);
+        sprite.position.set(this.renderWidth, BIOME_BOTTOM_RANGE);
 
-        // Populate the sprite with objects
-        this.populateBiom(biomeSprite);
-
-
-        return new Biome(length, biomeSprite);
+        return sprite;
     }
 
     // Normalize x coordinate for s scale. 
@@ -72,40 +103,149 @@ class BiomeGenerator {
         return (x/s);
     }
 
-    populateBiom(sprite) {
-
-        let xCord = 600;
-        let yCord = 350;
-
-        if (this.k !== 1) {
-            this.addHugePyramidToFirstWindow(this.k, sprite);
-            this.addUltraHugePyramidToLastBiomeWindow(this.k, sprite);
-        }
-
-        log("Bounds before adding pyramid")
-        log(sprite.getBounds())
+    populateBiom(sprite, itemSets, itemLengths) {
 
         // TODO: Generate far background (tiny items + few small pyramids)
-
+        this.addFarBackgroundItems(sprite, itemSets, itemLengths);
+        
         // TODO: Generate general background (pyramids mainly)
+        if (this.biomeType !== "DESERT") {
+            this.addBackgroundItems(sprite, itemSets, itemLengths);
+        }
+        
+        // Note that only big items (likely in the foreground only) should 
+        // be added here.
+        this.addBiomeSpecificItems(sprite);
 
         // Should come always last to cover what is rendered behind it (perspective).
-        this.addForegroundItems(this.k, sprite);
+        this.addForegroundItems(this.k, sprite, itemSets, itemLengths);
     }
 
-    addForegroundItems(bSize, sprite) {
+    addBiomeSpecificItems(biome) {
+        switch (this.biomeType) {
+            case "DESERT": 
+                this.addHugePyramidToFirstWindow(this.k, biome);
+                this.addUltraHugePyramidToLastBiomeWindow(this.k, biome);
+            break;
+        }
+    }
+
+    addFarBackgroundItems(sprite, itemSets, itemLenghts) {
+        let FBGLowerBound = 35;
+        let FBGUpperBound = 195;
+
+        let items = itemSets["all"];
+        let sizes = itemLenghts["tiny"];
+
+        // DESERT-ONLY Only very small pyramids should be added to the far background
+        if (this.biomeType === "DESERT") {
+            items.push("pyramid_01");
+            sizes["pyramid_01"] = 110;
+        }
+
+        let screensToSeed = this.k;
+        for (let i = 1; i<= screensToSeed; i++) {
+            let placedIntervals = [];
+            
+            // Generate items to be placed into the background.
+            let rndItems = [];
+            for (let j = 0; j < 12; j++) {
+                rndItems.push(Utils.randomElement(items));
+            }
+
+            let itemX = Utils.randomIntNumberFromRange(this.getLowerXBoundForSmall(i), this.getUpperXBoundForSmall(i));
+            this.placeObjectTo(rndItems[0] + "_ultrasmall", itemX,
+                Utils.randomIntNumberFromRange(FBGLowerBound, FBGUpperBound), sprite, this.k);
+            placedIntervals.push(new Interval(itemX, itemX + sizes[rndItems[0]]));
+            rndItems.shift();
+
+            let watchDog = 250;
+            while(placedIntervals.length !== 12) {
+                watchDog -= 1; 
+                if (watchDog <= 0) { console.log("Watchdog FBG: Reeeeeee...."); break; }
+
+                itemX = Utils.randomIntNumberFromRange(this.getLowerXBoundForBig(i), this.getUpperXBoundForBig(i));
+                let canPlace = true;
+                for (let x = 0; x < placedIntervals.length; x++) {
+                    if (placedIntervals[x].covers(itemX, itemX + sizes[rndItems[0]])) {
+                        canPlace = false;
+                        break;
+                    }
+                }
+
+                if (canPlace) {
+                    this.placeObjectTo(rndItems[0] + "_ultrasmall", itemX, Utils.randomIntNumberFromRange(FBGLowerBound, FBGUpperBound), sprite, this.k);                            
+                    placedIntervals.push(new Interval(itemX, itemX + sizes[rndItems[0]]));
+                    rndItems.shift();
+                }
+            }
+        }
+    }
+
+    addBackgroundItems(sprite, itemSets, itemLenghts) {
+        let BGLowerBound = 150;
+        let BGUpperBound = 345;
+
+        let items = itemSets["all"];
+        let sizes = itemLenghts["small"];
+
+        // DESERT-ONLY Only very small pyramids should be added to the background
+        if (this.biomeType === "DESERT") {
+            items.push("pyramid_01");
+            sizes["pyramid_01"] = 184;
+        }
+
+        let screensToSeed = this.k;
+        for (let i = 1; i<= screensToSeed; i++) {
+            let placedIntervals = [];
+            
+            // Generate items to be placed into the background.
+            let rndItems = [];
+            for (let j = 0; j < 100; j++) {
+                rndItems.push(Utils.randomElement(items));
+            }
+
+            let itemX = Utils.randomIntNumberFromRange(this.getLowerXBoundForSmall(i), this.getUpperXBoundForSmall(i));
+            this.placeObjectTo(rndItems[0] + "_small", itemX,
+                Utils.randomIntNumberFromRange(BGLowerBound, BGUpperBound), sprite, this.k);
+            placedIntervals.push(new Interval(itemX, itemX + sizes[rndItems[0]]));
+            rndItems.shift();
+
+            let watchDog = 250;
+            while(placedIntervals.length !== 5) {
+                watchDog -= 1; 
+                if (watchDog <= 0) { console.log("Watchdog BG: Reeeeeee...."); break; }
+
+                itemX = Utils.randomIntNumberFromRange(this.getLowerXBoundForBig(i), this.getUpperXBoundForBig(i));
+                let canPlace = true;
+                for (let x = 0; x < placedIntervals.length; x++) {
+                    if (placedIntervals[x].covers(itemX, itemX + sizes[rndItems[0]])) {
+                        canPlace = false;
+                        break;
+                    }
+                }
+
+                if (canPlace) {
+                    this.placeObjectTo(rndItems[0] + "_small", itemX, Utils.randomIntNumberFromRange(BGLowerBound, BGUpperBound), sprite, this.k);                            
+                    placedIntervals.push(new Interval(itemX, itemX + sizes[rndItems[0]]));
+                    rndItems.shift();
+                }
+            }
+        }
+    }
+
+    addForegroundItems(bSize, sprite, itemSets, itemLenghts) {
         // Height range should be between BIOME_TOP_RANGE and BIOME_TOP_RANGE - 170
         let FGLowerBound = BIOME_TOP_RANGE - 170;
         let FGUpperBound = BIOME_TOP_RANGE - 70;
 
 
-        let foregroundItems = ["sandblock_01", "sandwall_01", "sandwall_02", "sandblock_01", "sandblock_01", "sandblock_01"];
-        let foregroundItemsHuge = ["sandblock_01"];
-        let foregroundItemsMedium = ["sandblock_01", "sandwall_01", "sandblock_01", "sandblock_01"];
-        let hugeItemLenghts = { "sandblock_01": 171, "sandwall_01":377, "sandwall_02": 326};
-        let mediumItemLengths = {"sandblock_01": 120, "sandwall_01":232, "sandwall_02": 230};
-        let smallItemLengths = {"sandblock_01": 50, "sandwall_01":172, "sandwall_02": 132};
-        let tinyItemLenghts = {"sandblock_01": 15, "sandwall_01":57, "sandwall_02": 60};
+        let foregroundItems = itemSets["all"];
+        let foregroundItemsHuge = itemSets["huge"];
+        let foregroundItemsMedium = itemSets["medium"];
+        let hugeItemLenghts = itemLenghts["huge"];
+        let mediumItemLengths = itemLenghts["medium"];
+        let smallItemLengths = itemLenghts["small"];
         
         let screensToSeed = this.k;
         for (let i = 1; i <= screensToSeed; i++) {
@@ -124,22 +264,21 @@ class BiomeGenerator {
 
             // Place the first huge item randomly and remember where it is placed.
             let hugeX = Utils.randomIntNumberFromRange(this.getLowerXBoundForBig(i), this.getUpperXBoundForBig(i));
-            this.placeObjectTo(rndHuge + "_huge",
-                hugeX,
+            this.placeObjectTo(rndHuge + "_huge", hugeX,
                 Utils.randomIntNumberFromRange(FGLowerBound, FGLowerBound + 35),
                 sprite, bSize);
             placedIntervals.push(new Interval(hugeX, hugeX + hugeItemLenghts[rndHuge]));
 
             // Start placing other items to the screen if there is enough space.
-            let placedMedium = 0;
-            let placedSmall = 0;
+            let placedMedium = 0, placedSmall = 0;
             let watchDog = 250;
-            while (placedIntervals.length !== 7) {
+            while (placedIntervals.length !== 6) {
             
                 // If sprite placement is not possible, skip placement.
                 watchDog -= 1;
                 if (watchDog <= 0) 
                 {
+                    log("Watchdog: *autistic screeching*...");
                     break;
                 }
     
@@ -163,7 +302,7 @@ class BiomeGenerator {
                 }
     
                 // Also try placing small item.
-                if (placedSmall !== 5) {
+                if (placedSmall !== 4) {
                     // Try place small
                     let smallX = Utils.randomIntNumberFromRange(this.getLowerXBoundForSmall(i), this.getUpperXBoundForSmall(i));
                     let canPlace = true;
@@ -188,7 +327,7 @@ class BiomeGenerator {
 
     placeObjectTo(object, coordX, coordY, sprite, bSize) {
         let newSprite = new PIXI.Sprite(
-            PIXI.loader.resources["assets/images/" + object + ".png"].texture
+            PIXI.loader.resources[desertBiomFolder + object + ".png"].texture
         );
         newSprite.anchor.set(0, 1); // TODO: Rethink this decision.
         newSprite.scale.set(1/bSize, 1.0);
@@ -246,7 +385,7 @@ class BiomeGenerator {
             case "small":
             case "ultrasmall":
                 return new PIXI.Sprite(
-                    PIXI.loader.resources["assets/images/pyramid_01_" + size + ".png"].texture
+                    PIXI.loader.resources[desertBiomFolder + "pyramid_01_" + size + ".png"].texture
                 );
             default:
             throw new Error(
