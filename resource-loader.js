@@ -35,6 +35,7 @@ const resources = [
     levelFolder + "15.png",
     levelFolder + "16.png",
     levelFolder + "backbutton.png",
+    imagesFolder + "stickmanUFO.png",
     imagesFolder + "cloud_1.png",
     imagesFolder + "cloud_2.png",
     imagesFolder + "entity_place_holder.png",
