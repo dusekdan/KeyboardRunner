@@ -52,7 +52,13 @@ const startGame = (level) => {
     KeyboardReader.attachKeyboardReader();
 
     // Acquire word-set for current level
-    var wordSet = WordSet.getWordSetForLevel(level);
+    let wordSet;
+    if (GameStore.getLastUnlockedLevel() === 16) {
+        wordSet = WordSet.getExtendedWordSetForLevel(level);
+    } else {
+        wordSet = WordSet.getWordSetForLevel(level);
+    }
+    
     
     // TODO: Determine what should happen depending on the level
     if (level === undefined) {

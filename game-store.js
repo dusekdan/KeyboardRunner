@@ -28,9 +28,11 @@ class GameStore {
 
     static saveScore(level, score, name) {
         var storage = window.localStorage;
-        if (name === undefined || name.trim() === "") {
+        if (name === undefined || name === null) {
             name = "Unknown runner";
-        } 
+        } else if (name.trim() === "") {
+            name = "Unknown runner";
+        }
 
         let scoreObject = {
             "score" : score,

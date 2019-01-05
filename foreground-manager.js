@@ -20,6 +20,7 @@ class ForegroundManager {
         // Environment settings
         this.entityLimit = 10;
         this.entitySize = 25;
+        this.shouldTerminateThisTick = false;
         
         // The initial number of ticks before the first entity gets spawned.
         this.ticks = 100;
@@ -71,10 +72,13 @@ class ForegroundManager {
         var playerG = new PIXI.Graphics();
         playerG.beginFill(0x000000);
         playerG.lineStyle(0);
-        playerG.drawRect(0, 0, 125, 175);
+        playerG.drawRect(0, 0, 135, 175);
         playerG.endFill();
     
-        var player = Utils.createSpriteFromGraphics(app.renderer, playerG);
+        //var player = Utils.createSpriteFromGraphics(app.renderer, playerG);
+        var player = new PIXI.Sprite(
+            PIXI.loader.resources[imagesFolder + "stickmanUFO.png"].texture
+        );
         player.position.set(35,  400);
         this.container.addChild(player);
 
@@ -267,21 +271,26 @@ class ForegroundManager {
         // Check game ending condition
         let hasPlayerLost = this.hasPlayerLost();
         if (this.isLevelBeaten() || hasPlayerLost) {
+            if (this.shouldTerminateThisTick) {
+                // Try to get the player name for the scoreboard & save score.
+                let promptText = hasPlayerLost ? "DAMN, YOU LOSE!\n" : "God damn! Looks like we've got ourselves a winner!\n"
+                let playerName = prompt(promptText + "\nPlease your name:"); // FUTURE: Replace this with in-game rendered pop-up. (BIG)
+                GameStore.saveScore(this.level, this.score, playerName);
 
-            // Try to get the player name for the scoreboard & save score.
-            let playerName = prompt("Enter your name:"); // TODO: Replace this with in-game rendered pop-up.
-            GameStore.saveScore(this.level, this.score, playerName);
-
-            if (!hasPlayerLost) {
-                // If the next level after this one was not beaten before, unlock it.
-                let lastUnlockedLevel = parseInt(GameStore.getLastUnlockedLevel());
-                if (lastUnlockedLevel == this.level) {
-                    log("trying to unlock " + this.level);
-                    GameStore.setLevelCompleted(this.level);
+                if (!hasPlayerLost) {
+                    // If the next level after this one was not beaten before, unlock it.
+                    let lastUnlockedLevel = parseInt(GameStore.getLastUnlockedLevel());
+                    if (lastUnlockedLevel == this.level) {
+                        log("trying to unlock " + this.level);
+                        GameStore.setLevelCompleted(this.level);
+                    }
                 }
-            }
 
-            return "LEVEL-FINISHED-FLAG-TERMINATED";
+                return "LEVEL-FINISHED-FLAG-TERMINATED";
+            } 
+
+            this.shouldTerminateThisTick = true;
+            return "LEVEL-IN-PROGRESS";
         } else {
             return "LEVEL-IN-PROGRESS";
         }

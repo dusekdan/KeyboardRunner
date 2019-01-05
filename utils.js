@@ -67,9 +67,59 @@ class Utils {
         let tresholdsInNew = Math.floor(newValue / treshold);
         return tresholdsInNew > tresholdsInOld;
     }
+
+    /**
+     * Randomize array element order in-place.
+     * Using Durstenfeld shuffle algorithm.
+     * Taken from: https://stackoverflow.com/a/12646864
+     */
+    static shuffleArray(array) {
+        for (var i = array.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+
+        return array;
+    }
+
+    /**
+     * Remove duplicates from array.
+     * Taken from: https://stackoverflow.com/a/1584377 
+     */
+    static arrayUnique(array) {
+        var a = array.concat();
+        for(var i=0; i<a.length; ++i) {
+            for(var j=i+1; j<a.length; ++j) {
+                if(a[i] === a[j])
+                    a.splice(j--, 1);
+            }
+        }
+    
+        return a;
+    }
 }
 
 class WordSet {
+
+    static getExtendedWordSetForLevel(level) {
+        let basicSet = WordSet.getWordSetForLevel(level);
+        let extraSet;
+        if (level > 1 && level < 16) {
+            extraSet = WordSet.getWordSetForLevel(level + 1);
+        } else if (level !== 1){
+            extraSet = WordSet.getWordSetForLevel(level - 1);
+        } else {
+            extraSet = WordSet.getWordSetForLevel(level + 1);
+        }
+
+        // Remove duplicates & shuffle the array.
+        return Utils.shuffleArray(
+                Utils.arrayUnique(basicSet.concat(extraSet))
+        );
+    }
+
     static getWordSetForLevel(level) {
         switch(level) {
             case 1: 
