@@ -69,13 +69,6 @@ class ForegroundManager {
     }
 
     addPlayerEntity() {
-        var playerG = new PIXI.Graphics();
-        playerG.beginFill(0x000000);
-        playerG.lineStyle(0);
-        playerG.drawRect(0, 0, 135, 175);
-        playerG.endFill();
-    
-        //var player = Utils.createSpriteFromGraphics(app.renderer, playerG);
         var player = new PIXI.Sprite(
             PIXI.loader.resources[imagesFolder + "stickmanUFO.png"].texture
         );
