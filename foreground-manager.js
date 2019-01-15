@@ -267,7 +267,7 @@ class ForegroundManager {
             if (this.shouldTerminateThisTick) {
                 // Try to get the player name for the scoreboard & save score.
                 let promptText = hasPlayerLost ? "DAMN, YOU LOSE!\n" : "God damn! Looks like we've got ourselves a winner!\n"
-                let playerName = prompt(promptText + "\nPlease your name:"); // FUTURE: Replace this with in-game rendered pop-up. (BIG)
+                let playerName = prompt(promptText + "\nPlease enter your name:"); // FUTURE: Replace this with in-game rendered pop-up. (BIG)
                 GameStore.saveScore(this.level, this.score, playerName);
 
                 if (!hasPlayerLost) {
